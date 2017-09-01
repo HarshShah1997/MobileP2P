@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        is-multidex="false"
+        jar="C:\Users\Harsh\.android\build-cache\1c50c7baa1fac54660149ebc7370d997e67f5139\output\jars\classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="150252b33b00274cc868578ade018fda0d43a3eb">
+        <dex dex="C:\Users\Harsh\AndroidStudioProjects\MyApplication\app\build\intermediates\pre-dexed\debug\classes_fc77bdb4d47ba2a71f3fac3a6d38e6bad16ca3d9.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="C:\Users\Harsh\.android\build-cache\eb98261b7bb1982af081dae990a5ba8d35e54829\output\jars\classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="d7c42c80f6509b9ea4db28ca7859ffae08ec5741">
+        <dex dex="C:\Users\Harsh\AndroidStudioProjects\MyApplication\app\build\intermediates\pre-dexed\debug\classes_7a96b1128b40683623419cd73a3b73c10e0dd294.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="C:\Users\Harsh\AppData\Local\Android\sdk\extras\android\m2repository\com\android\support\support-annotations\25.3.1\support-annotations-25.3.1.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="bf8841d29fa39e077730e7a91222c2ce269fa7c9">
+        <dex dex="C:\Users\Harsh\AndroidStudioProjects\MyApplication\app\build\intermediates\pre-dexed\debug\support-annotations-25.3.1_c0fdccc46af2aed07bc12925b19f2dc3b20b3941.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="C:\Users\Harsh\.android\build-cache\74401afb317b872406e7896e4ecf88c69d059c39\output\jars\classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="47635644d0d5c103c1dd8360549eb9ba3225c7d3">
+        <dex dex="C:\Users\Harsh\AndroidStudioProjects\MyApplication\app\build\intermediates\pre-dexed\debug\classes_68211eb8ccd347787e530c26998abbbea519105a.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="C:\Users\Harsh\.android\build-cache\2a63aa1c6f79cb23e3f5082dc52b386f30fb597b\output\jars\classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="052f5f840f21174a3ecf6544130194e2652cbb73">
+        <dex dex="C:\Users\Harsh\AndroidStudioProjects\MyApplication\app\build\intermediates\pre-dexed\debug\classes_0acf5a12b2fc55fb68f66c5a34261bc20b1c6471.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="C:\Users\Harsh\.android\build-cache\367e949112850549fec6dd4834b6d74a3da23f59\output\jars\classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="44ee06abb66da30f5855e6bf54574e64cdcd982a">
+        <dex dex="C:\Users\Harsh\AndroidStudioProjects\MyApplication\app\build\intermediates\pre-dexed\debug\classes_46ee680211e00dcc935d5480255c93d398745837.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="C:\Users\Harsh\.android\build-cache\5bdaea3530c6527fbdca3b01c449bdd728d8eb09\output\jars\classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="6ef31f1555bb4cc513ec8d52711365a8b89f3600">
+        <dex dex="C:\Users\Harsh\AndroidStudioProjects\MyApplication\app\build\intermediates\pre-dexed\debug\classes_068d21bbf756889ee87047c73576512e08abf48a.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="C:\Users\Harsh\AppData\Local\Android\sdk\extras\m2repository\com\android\support\constraint\constraint-layout-solver\1.0.2\constraint-layout-solver-1.0.2.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="b9cd8fc6bd15cb915735d34535db30ece0c44603">
+        <dex dex="C:\Users\Harsh\AndroidStudioProjects\MyApplication\app\build\intermediates\pre-dexed\debug\constraint-layout-solver-1.0.2_685400f4e93a3311f475b474fa6ee1bd2ff2badd.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="C:\Users\Harsh\.android\build-cache\e15eff5ccd4c6e4946e5011cdcb0a2357f06a6f1\output\jars\classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="4a26a1154d053ab11aaf4c3967c42a4d66390991">
+        <dex dex="C:\Users\Harsh\AndroidStudioProjects\MyApplication\app\build\intermediates\pre-dexed\debug\classes_6e85fbea451475e6dfdd67c90b4ead40dfa2b927.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="C:\Users\Harsh\.android\build-cache\577b668b7fa7d9766c1a5d0991797583668b71b1\output\jars\classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="efb8cb62d47d157c29d1521daac7eefd4cb881ee">
+        <dex dex="C:\Users\Harsh\AndroidStudioProjects\MyApplication\app\build\intermediates\pre-dexed\debug\classes_fd900b6f8f48065d90fe5f51e03cb3d2aa429aa7.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="C:\Users\Harsh\.android\build-cache\68a33982d4d387825d7e53660fbac078d126ac4c\output\jars\classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="da27a32db6af8954ee8061537c7d476fcb1df46f">
+        <dex dex="C:\Users\Harsh\AndroidStudioProjects\MyApplication\app\build\intermediates\pre-dexed\debug\classes_a87d8b60f98c6a05a06364a8f0e5823ba48432f1.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="C:\Users\Harsh\.android\build-cache\f88b380f5545c80cc14130ae562d879ac1752956\output\jars\classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="26.0.1"
+        sha1="45f697922e6f072daa12f8a2995dc77ab03c11da">
+        <dex dex="C:\Users\Harsh\AndroidStudioProjects\MyApplication\app\build\intermediates\pre-dexed\debug\classes_8739ddd583279397fed80222f76bece3ca4dcd40.jar" />
+    </item>
+
+</items>

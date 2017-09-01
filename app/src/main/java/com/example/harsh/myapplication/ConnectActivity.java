@@ -20,7 +20,7 @@ import java.util.List;
 public class ConnectActivity extends AppCompatActivity {
 
     private String mServiceName = "NsdChat";
-    private String SERVICE_TYPE = "_nsdchat._tcp";
+    private String SERVICE_TYPE = "_nsdchat._tcp.";
 
     private static final String TAG = "ConnectActivity";
 
@@ -116,7 +116,7 @@ public class ConnectActivity extends AppCompatActivity {
         public void onServiceFound(NsdServiceInfo service) {
             // A service was found!  Do something with it.
             Log.d(TAG, "Service discovery success" + service);
-            if (!service.getServiceType().equals(SERVICE_TYPE + ".")) {
+            if (!service.getServiceType().equals(SERVICE_TYPE)) {
                 // Service type is the string containing the protocol and
                 // transport layer for this service.
                 Log.d(TAG, "Unknown Service Type: " + service.getServiceType());
@@ -125,7 +125,7 @@ public class ConnectActivity extends AppCompatActivity {
                 // connecting to. It could be "Bob's Chat App".
                 Log.d(TAG, "Same machine: " + mServiceName);
             } else if (service.getServiceName().contains("NsdChat")) {
-                mNsdManager.resolveService(service, mResolveListener);
+                mNsdManager.resolveService(service, new MyResolveListener());
             }
         }
 
@@ -154,7 +154,7 @@ public class ConnectActivity extends AppCompatActivity {
         }
     };
 
-    private NsdManager.ResolveListener mResolveListener = new NsdManager.ResolveListener() {
+    private class MyResolveListener implements NsdManager.ResolveListener {
 
         @Override
         public void onResolveFailed(NsdServiceInfo serviceInfo, int errorCode) {
@@ -175,7 +175,7 @@ public class ConnectActivity extends AppCompatActivity {
             InetAddress host = mService.getHost();
 
 
-            final String hostName = host.getHostName().toString();
+            final String hostName = host.getHostName();
             hostAddresses.add(hostName);
 
             runOnUiThread(new Runnable() {
@@ -183,8 +183,8 @@ public class ConnectActivity extends AppCompatActivity {
                 public void run() {
                     TextView textView  = (TextView) findViewById(R.id.services);
                     String display = "";
-                    for (String hostName : hostAddresses) {
-                        display += hostName + "\n";
+                    for (String hostname : hostAddresses) {
+                        display += hostname + "\n";
                     }
                     textView.setText(display);
                 }

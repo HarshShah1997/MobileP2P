@@ -1,8 +1,10 @@
 package com.example.harsh.myapplication;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
+import android.os.BatteryManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -30,10 +32,10 @@ public class ConnectActivity extends AppCompatActivity {
     private String SERVICE_TYPE = "_http._tcp.";
 
     private static final String TAG = "ConnectActivity";
-    private static final int PORT = 4445;
+    private static final int PORT = 4446;
     private static final String CHARSET = "UTF-8";
 
-    private static final String MSG = "Hello!";
+    private String systemInfo = getSystemInfo();
 
     private List<String> hostAddresses = new ArrayList<>();
 
@@ -51,6 +53,7 @@ public class ConnectActivity extends AppCompatActivity {
         setContentView(R.layout.activity_connect);
 
         mNsdManager = (NsdManager) getSystemService(Context.NSD_SERVICE);
+
         try {
             mServerSocket = new ServerSocket(0);
             int portNo = mServerSocket.getLocalPort();
@@ -210,23 +213,25 @@ public class ConnectActivity extends AppCompatActivity {
     }
 
     private void handleNewHostAddress(final String hostAddress) {
-        hostAddresses.add(hostAddress);
+        if (hostAddresses.indexOf(hostAddress) == -1) {
+            hostAddresses.add(hostAddress);
 
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                TextView textView = (TextView) findViewById(R.id.services);
-                textView.setText(textView.getText() + "\n" + hostAddress);
-            }
-        });
-        sendHello(hostAddress);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    TextView textView = (TextView) findViewById(R.id.services);
+                    textView.setText(textView.getText() + "\n" + hostAddress);
+                }
+            });
+            sendHello(hostAddress);
+        }
     }
 
     private void sendHello(String hostAddress) {
         Socket socket = null;
         try {
             socket = new Socket(hostAddress, PORT);
-            InputStream messageStream = new ByteArrayInputStream(MSG.getBytes(Charset.forName(CHARSET)));
+            InputStream messageStream = new ByteArrayInputStream(systemInfo.getBytes(Charset.forName(CHARSET)));
             socketUtils.send(socket, messageStream);
         } catch (IOException e) {
             e.printStackTrace();
@@ -286,4 +291,26 @@ public class ConnectActivity extends AppCompatActivity {
             }
         }
     }
+
+    private static long getTotalMemory(Context activity) {
+        try {
+            ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+            ActivityManager activityManager = (ActivityManager) activity.getSystemService(Context.ACTIVITY_SERVICE);
+            activityManager.getMemoryInfo(mi);
+            long availableMegs = mi.totalMem / 1048576L; // in megabyte (mb)
+
+            return availableMegs;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    private String getSystemInfo() {
+        //String totalMemory = String.valueOf(getTotalMemory(this));
+        //return totalMemory;
+        //return BatteryManager.EXTRA_LEVEL;
+        return "Hello";
+    }
+
 }

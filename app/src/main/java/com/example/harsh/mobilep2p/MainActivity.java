@@ -2,16 +2,12 @@ package com.example.harsh.mobilep2p;
 
 import android.net.DhcpInfo;
 import android.net.wifi.WifiManager;
-import android.provider.SyncStateContract;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
-import android.app.ActivityManager;
 import android.content.Context;
-import android.net.nsd.NsdManager;
-import android.net.nsd.NsdServiceInfo;
 import android.util.Log;
-import android.view.View;
+import android.util.TypedValue;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -19,23 +15,17 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -43,8 +33,12 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private static final int PORT = 6578;
+    private static final int BUFF_SIZE = 4096;
+    private static final int TEXTVIEW_SIZE = 8;
 
     private List<String> hostAddresses = new ArrayList<>();
+    private Map<String, TableRow> tableRowMap = new HashMap<>();
+    private Map<String, SystemResources> resourcesMap = new HashMap<>();
 
     private Gson gson = new Gson();
 
@@ -67,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
             while (true) {
                 Log.d(TAG, "Ready to receive packets");
 
-                byte[] recvBuf = new byte[15000];
+                byte[] recvBuf = new byte[BUFF_SIZE];
                 DatagramPacket packet = new DatagramPacket(recvBuf, recvBuf.length);
                 socket.receive(packet);
                 processIncomingPacket(packet);
@@ -137,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void announcePresence() {
-        sendBroadcast("new");
+        sendBroadcast(CommandTypes.NEW);
     }
 
     private void startReceiveBroadcast() {
@@ -153,12 +147,12 @@ public class MainActivity extends AppCompatActivity {
         String hostAddress = packet.getAddress().getHostAddress();
         Log.i(TAG, String.format("Packet received from: %s Data: %s", hostAddress, data));
 
-        if (data.equals("new")) {
+        if (data.equals(CommandTypes.NEW)) {
             addHostAddress(hostAddress);
             sendPresence();
-        } else if (data.substring(0, 7).equals("present")) {
+        } else if (data.startsWith(CommandTypes.PRESENT)) {
             addHostAddress(hostAddress);
-            //addResources(hostAddress, data);
+            addResources(hostAddress, data);
         }
     }
 
@@ -176,23 +170,50 @@ public class MainActivity extends AppCompatActivity {
 
                 TextView ipAddrView = new TextView(MainActivity.this);
                 ipAddrView.setText(hostAddress);
+                ipAddrView.setTextSize(TypedValue.COMPLEX_UNIT_SP, TEXTVIEW_SIZE);
+
                 row.addView(ipAddrView);
                 tableLayout.addView(row);
+
+                tableRowMap.put(hostAddress, row);
             }
         });
     }
 
+    private void addResources(String hostAddress, String data) {
+        String json = data.substring(CommandTypes.PRESENT.length());
+        Log.i(TAG, "JSON String: " + json);
+        SystemResources resources = gson.fromJson(json, SystemResources.class);
+        addResourcesToTable(hostAddress, resources);
+        resourcesMap.put(hostAddress, resources);
+    }
+
+    private void addResourcesToTable(final String hostAddress, final SystemResources resources) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                TableRow row = tableRowMap.get(hostAddress);
+
+                row.addView(createTextView(resources.getBatteryStatus()));
+                row.addView(createTextView(resources.getBatteryLevel()));
+                row.addView(createTextView(resources.getTotalMemory()));
+            }
+        });
+    }
+
+    private TextView createTextView(String text) {
+        TextView textView = new TextView(MainActivity.this);
+        textView.setText(text);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, TEXTVIEW_SIZE);
+        return textView;
+    }
+
     private void sendPresence() {
-        String message = "present";
-        SystemResources resources = new SystemResources();
+        String message = CommandTypes.PRESENT;
+        SystemResources resources = new SystemResources(MainActivity.this);
         String json = gson.toJson(resources);
         message += json;
         sendBroadcast(message);
-    }
-
-    private void sendResources() {
-    //    SystemResources systemResoruces = new SystemResources(getDeviceIPAddress());
-
     }
 
     private void acquireMulticastLock() {

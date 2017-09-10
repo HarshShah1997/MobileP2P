@@ -10,5 +10,7 @@ public class CommandTypes {
 
     public static final String PRESENT = "present";
 
+    public static final String NEW_SMART_HEAD = "newsmarthead";
+
 
 }

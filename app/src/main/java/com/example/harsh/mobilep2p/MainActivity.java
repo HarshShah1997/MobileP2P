@@ -15,6 +15,8 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 
+import org.w3c.dom.Text;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.DatagramPacket;
@@ -36,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int BUFF_SIZE = 4096;
     private static final int TEXTVIEW_SIZE = 8;
 
+    private String smartHead = "";
     private List<String> hostAddresses = new ArrayList<>();
     private Map<String, TableRow> tableRowMap = new HashMap<>();
     private Map<String, SystemResources> resourcesMap = new HashMap<>();
@@ -153,6 +156,8 @@ public class MainActivity extends AppCompatActivity {
         } else if (data.startsWith(CommandTypes.PRESENT)) {
             addHostAddress(hostAddress);
             addResources(hostAddress, data);
+        } else if (data.startsWith(CommandTypes.NEW_SMART_HEAD)) {
+            updateSmartHead(data.substring(CommandTypes.NEW_SMART_HEAD.length()));
         }
     }
 
@@ -194,6 +199,9 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 TableRow row = tableRowMap.get(hostAddress);
 
+                row.removeAllViews();
+
+                row.addView(createTextView(hostAddress));
                 row.addView(createTextView(resources.getBatteryStatus()));
                 row.addView(createTextView(resources.getBatteryLevel()));
                 row.addView(createTextView(resources.getTotalMemory()));
@@ -226,8 +234,54 @@ public class MainActivity extends AppCompatActivity {
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
-
+                String newSmartHead = findSmartHead();
+                if (newSmartHead != smartHead) {
+                    sendBroadcast(CommandTypes.NEW_SMART_HEAD + newSmartHead);
+                }
             }
         }, 5000);
+    }
+
+    private String findSmartHead() {
+        String maxHostCharging = "";
+        double maxWeightCharging = 0;
+        String maxHostNotCharging = "";
+        double maxWeightNotCharging = 0;
+
+        for (String hostAddress : hostAddresses) {
+            SystemResources resources = resourcesMap.get(hostAddress);
+            int batteryLevel = Integer.parseInt(resources.getBatteryLevel());
+            int ram = Integer.parseInt(resources.getAvailableMemory());
+            if (resources.getBatteryStatus().equals("CHARGING") && batteryLevel > 30) {
+                double currWeightCharging = 0.75 * batteryLevel + 0.25 * ram;
+                if (currWeightCharging > maxWeightCharging) {
+                    maxWeightCharging = currWeightCharging;
+                    maxHostCharging = hostAddress;
+                }
+            } else {
+                double currWeightNotCharging = 0.75 * batteryLevel + 0.25 * ram;
+                if (currWeightNotCharging > maxWeightNotCharging) {
+                    maxWeightNotCharging = currWeightNotCharging;
+                    maxHostNotCharging = hostAddress;
+                }
+            }
+        }
+        if (maxWeightCharging > 0) {
+            return maxHostCharging;
+        } else {
+            return maxHostNotCharging;
+        }
+    }
+
+    private void updateSmartHead(final String newSmartHead) {
+        smartHead = newSmartHead;
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                TextView smartHeadView = (TextView) findViewById(R.id.smartHead);
+                smartHeadView.setText(newSmartHead);
+            }
+        });
     }
 }

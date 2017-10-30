@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.content.Context;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.View;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -283,5 +284,15 @@ public class MainActivity extends AppCompatActivity {
                 smartHeadView.setText(newSmartHead);
             }
         });
+    }
+
+    public void sendFile(View view) {
+        //TextView sendIPAddressView = (TextView) getViewById
+        String filename = "example";
+        String ipAddress =
+    }
+
+    public void receiveFile(View view) {
+
     }
 }

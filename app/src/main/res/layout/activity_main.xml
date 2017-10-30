@@ -16,7 +16,7 @@
         android:layout_marginTop="16dp"
         app:layout_constraintLeft_toLeftOf="parent"
         android:layout_marginLeft="16dp"
-        android:layout_marginRight="0dp">
+        android:layout_marginStart="16dp">
 
         <TableRow
             android:id="@+id/headings"
@@ -71,5 +71,49 @@
         app:layout_constraintLeft_toRightOf="@+id/smartHeadLabel"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tableLayout" />
+
+    <EditText
+        android:id="@+id/sendIPAddress"
+        android:layout_width="139dp"
+        android:layout_height="44dp"
+        android:layout_marginTop="8dp"
+        android:ems="10"
+        android:inputType="textPersonName"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/smartHeadLabel"
+        app:layout_constraintRight_toLeftOf="@+id/sendFileButton" />
+
+    <Button
+        android:id="@+id/sendFileButton"
+        android:layout_width="88dp"
+        android:layout_height="48dp"
+        android:onClick="sendFile"
+        android:text="Send"
+        app:layout_constraintLeft_toRightOf="@+id/sendIPAddress"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@+id/smartHeadLabel" />
+
+    <EditText
+        android:id="@+id/receiveIPAddress"
+        android:layout_width="141dp"
+        android:layout_height="50dp"
+        android:ems="10"
+        android:inputType="textPersonName"
+        app:layout_constraintRight_toLeftOf="@+id/receiveFileButton"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@+id/sendIPAddress" />
+
+    <Button
+        android:id="@+id/receiveFileButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:onClick="receiveFile"
+        android:text="Receive"
+        app:layout_constraintLeft_toRightOf="@+id/receiveIPAddress"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/sendIPAddress" />
 
 </android.support.constraint.ConstraintLayout>

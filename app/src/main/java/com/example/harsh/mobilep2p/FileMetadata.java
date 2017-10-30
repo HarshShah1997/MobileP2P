@@ -6,16 +6,19 @@ import java.util.ArrayList;
  * Created by dell on 10/29/2017.
  */
 
-public class Filemetadata {
-   private String filename;
-    private int filesize;
-  // private ArrayList<String>nodeadresses =new ArrayList<String>();
+public class FileMetadata {
+
+    private String filename;
+
+    private long filesize;
 
     public void setFilename(String filename) {
+
         this.filename = filename;
     }
 
-    public void setFilesize(int filesize) {
+    public void setFilesize(long filesize) {
+
         this.filesize = filesize;
     }
 
@@ -24,7 +27,8 @@ public class Filemetadata {
         return filename;
     }
 
-    public int getFilesize() {
+    public long getFilesize() {
+
         return filesize;
     }
 }

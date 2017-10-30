@@ -288,8 +288,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void sendFile(View view) {
         //TextView sendIPAddressView = (TextView) getViewById
-        String filename = "example";
-        String ipAddress =
+        //String filename = "example";
+        //String ipAddress =
     }
 
     public void receiveFile(View view) {

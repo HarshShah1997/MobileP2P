@@ -12,5 +12,5 @@ public class CommandTypes {
 
     public static final String NEW_SMART_HEAD = "newsmarthead";
 
-
+    public static final String FILES_LIST = "fileslist";
 }

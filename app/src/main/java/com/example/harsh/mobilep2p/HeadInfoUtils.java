@@ -8,11 +8,29 @@ import java.util.*;
 
 public class HeadInfoUtils {
 
+    public List<FileMetadata> getFiles() {
+        return files;
+    }
+
+    public Map<String, List<FileMetadata>> getNodesContent() {
+        return nodesContent;
+    }
+
+    public Map<FileMetadata, List<String>> getFileLocations() {
+        return fileLocations;
+    }
+
     private List<FileMetadata> files = new ArrayList<FileMetadata>();
 
     private Map<String, List<FileMetadata>> nodesContent = new HashMap<>();
 
     private Map<FileMetadata, List<String>> fileLocations = new HashMap<>();
+
+    public void addFilesList(List<FileMetadata> receivedFileList, String node) {
+        for (FileMetadata receivedFile : receivedFileList) {
+            addFileInfo(receivedFile, node);
+        }
+    }
 
     public void addFileInfo(FileMetadata receivedFile, String node) {
         for (FileMetadata f : files) {
@@ -29,10 +47,10 @@ public class HeadInfoUtils {
     }
 
     public void addFileLocations(FileMetadata receivedFile, String node){
-        if(fileLocations.containsKey(receivedFile)){
+        if(fileLocations.containsKey(receivedFile) && !fileLocations.get(receivedFile).contains(node)) {
             fileLocations.get(receivedFile).add(node);
         } else {
-            ArrayList<String>list =new ArrayList<String>();
+            ArrayList<String>list = new ArrayList<String>();
             list.add(node);
             fileLocations.put(receivedFile, list);
         }

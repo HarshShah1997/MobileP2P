@@ -3,6 +3,7 @@ package com.example.harsh.mobilep2p;
 import android.content.Intent;
 import android.net.DhcpInfo;
 import android.net.wifi.WifiManager;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -16,10 +17,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import org.w3c.dom.Text;
 
+import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -38,12 +42,15 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int PORT = 6578;
     private static final int BUFF_SIZE = 4096;
+    private static final String UPLOAD_DIRECTORY = "/Upload";
 
     private String smartHead = "";
     private List<String> hostAddresses = new ArrayList<>();
     private HashMap<String, SystemResources> resourcesMap = new HashMap<>();
+    private List<FileMetadata> filesList = new ArrayList<>();
 
     private Gson gson = new Gson();
+    private HeadInfoUtils headInfoUtils = new HeadInfoUtils();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
         startReceiveBroadcast();
         announcePresence();
         startElection();
+        getFilesFromDevice();
     }
 
     private void receiveBroadcast() {
@@ -158,6 +166,16 @@ public class MainActivity extends AppCompatActivity {
             addResources(hostAddress, data);
         } else if (data.startsWith(CommandTypes.NEW_SMART_HEAD)) {
             updateSmartHead(data.substring(CommandTypes.NEW_SMART_HEAD.length()));
+        } else if (data.startsWith(CommandTypes.FILES_LIST)) {
+            Log.d(TAG, "Files list command");
+            updateFilesList(data.substring(CommandTypes.FILES_LIST.length()));
+            Log.d(TAG, "Device IP Address:" + getDeviceIPAddress().getHostAddress());
+            if (getDeviceIPAddress().getHostAddress().equals(smartHead)) {
+                headInfoUtils.addFilesList(filesList, hostAddress);
+                Log.d(TAG, "Files:" + headInfoUtils.getFiles());
+                Log.d(TAG, "Locations:" + headInfoUtils.getFileLocations());
+                Log.d(TAG, "Node Contains:" + headInfoUtils.getNodesContent());
+            }
         }
     }
 
@@ -173,7 +191,6 @@ public class MainActivity extends AppCompatActivity {
         String json = data.substring(CommandTypes.PRESENT.length());
         Log.i(TAG, "JSON String: " + json);
         SystemResources resources = gson.fromJson(json, SystemResources.class);
-        //addResourcesToTable(hostAddress, resources);
         resourcesMap.put(hostAddress, resources);
     }
 
@@ -196,8 +213,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 String newSmartHead = findSmartHead();
-                if (newSmartHead != smartHead) {
-                    sendBroadcast(CommandTypes.NEW_SMART_HEAD + newSmartHead);
+                String oldSmartHead = smartHead;
+                sendBroadcast(CommandTypes.NEW_SMART_HEAD + newSmartHead);
+                sendFilesList(filesList);
+                if (!oldSmartHead.equals(smartHead))) {
+                    transferFilesList(oldSmartHead, smartHead);
                 }
             }
         }, 5000);
@@ -243,6 +263,43 @@ public class MainActivity extends AppCompatActivity {
         intent.putExtra(IntentConstants.RESOURCES_MAP, resourcesMap);
         intent.putExtra(IntentConstants.SMART_HEAD, smartHead);
         startActivity(intent);
+    }
+
+    private void getFilesFromDevice() {
+        String path = Environment.getExternalStorageDirectory().toString() + UPLOAD_DIRECTORY;
+        File directory = new File(path);
+        File[] files = directory.listFiles();
+        for (int i = 0; files != null && i < files.length; i++)
+        {
+            FileMetadata fileMetadata = new FileMetadata();
+            Log.d(TAG, "Filename:" + files[i].getName());
+            fileMetadata.setFilename(files[i].getName());
+            fileMetadata.setFilesize(files[i].length());
+            filesList.add(fileMetadata);
+        }
+    }
+
+    private void sendFilesList(List<FileMetadata> filesList) {
+        String json = gson.toJson(filesList);
+        String message = CommandTypes.FILES_LIST + json;
+        sendBroadcast(message);
+    }
+
+    private void updateFilesList(String json) {
+        Type typeListFileMetadata = new TypeToken<ArrayList<FileMetadata>>(){}.getType();
+        List<FileMetadata> receivedFilesList = gson.fromJson(json, typeListFileMetadata);
+        for (FileMetadata receivedFile : receivedFilesList) {
+            if (!filesList.contains(receivedFile)) {
+                filesList.add(receivedFile);
+            }
+        }
+        for (FileMetadata fileMetadata : filesList) {
+            Log.d(TAG, "Network Filename:" + fileMetadata.getFilename());
+        }
+    }
+
+    private void transferFilesList(String oldSmartHead, String newSmartHead) {
+        //sendBroadcast(TRANSFER_FILES_LIST + )
     }
 
     public void sendFile(View view) {

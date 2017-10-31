@@ -7,11 +7,13 @@ import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.app.ActivityManager.MemoryInfo;
 
+import java.io.Serializable;
+
 /**
  * Created by Harsh on 9/7/2017.
  */
 
-public class SystemResources {
+public class SystemResources implements Serializable {
 
     private String batteryStatus;
 

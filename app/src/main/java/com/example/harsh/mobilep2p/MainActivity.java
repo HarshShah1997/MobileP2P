@@ -1,5 +1,6 @@
 package com.example.harsh.mobilep2p;
 
+import android.content.Intent;
 import android.net.DhcpInfo;
 import android.net.wifi.WifiManager;
 import android.support.v7.app.AppCompatActivity;
@@ -37,12 +38,10 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int PORT = 6578;
     private static final int BUFF_SIZE = 4096;
-    private static final int TEXTVIEW_SIZE = 8;
 
     private String smartHead = "";
     private List<String> hostAddresses = new ArrayList<>();
-    private Map<String, TableRow> tableRowMap = new HashMap<>();
-    private Map<String, SystemResources> resourcesMap = new HashMap<>();
+    private HashMap<String, SystemResources> resourcesMap = new HashMap<>();
 
     private Gson gson = new Gson();
 
@@ -167,54 +166,15 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         hostAddresses.add(hostAddress);
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                TableLayout tableLayout = (TableLayout) findViewById(R.id.tableLayout);
-                TableRow row = new TableRow(MainActivity.this);
-                row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
 
-                TextView ipAddrView = new TextView(MainActivity.this);
-                ipAddrView.setText(hostAddress);
-                ipAddrView.setTextSize(TypedValue.COMPLEX_UNIT_SP, TEXTVIEW_SIZE);
-
-                row.addView(ipAddrView);
-                tableLayout.addView(row);
-
-                tableRowMap.put(hostAddress, row);
-            }
-        });
     }
 
     private void addResources(String hostAddress, String data) {
         String json = data.substring(CommandTypes.PRESENT.length());
         Log.i(TAG, "JSON String: " + json);
         SystemResources resources = gson.fromJson(json, SystemResources.class);
-        addResourcesToTable(hostAddress, resources);
+        //addResourcesToTable(hostAddress, resources);
         resourcesMap.put(hostAddress, resources);
-    }
-
-    private void addResourcesToTable(final String hostAddress, final SystemResources resources) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                TableRow row = tableRowMap.get(hostAddress);
-
-                row.removeAllViews();
-
-                row.addView(createTextView(hostAddress));
-                row.addView(createTextView(resources.getBatteryStatus()));
-                row.addView(createTextView(resources.getBatteryLevel()));
-                row.addView(createTextView(resources.getTotalMemory()));
-            }
-        });
-    }
-
-    private TextView createTextView(String text) {
-        TextView textView = new TextView(MainActivity.this);
-        textView.setText(text);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, TEXTVIEW_SIZE);
-        return textView;
     }
 
     private void sendPresence() {
@@ -276,14 +236,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateSmartHead(final String newSmartHead) {
         smartHead = newSmartHead;
+    }
 
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                TextView smartHeadView = (TextView) findViewById(R.id.smartHead);
-                smartHeadView.setText(newSmartHead);
-            }
-        });
+    public void showDevices(View view) {
+        Intent intent = new Intent(this, DevicesListActivity.class);
+        intent.putExtra(IntentConstants.RESOURCES_MAP, resourcesMap);
+        intent.putExtra(IntentConstants.SMART_HEAD, smartHead);
+        startActivity(intent);
     }
 
     public void sendFile(View view) {

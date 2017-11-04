@@ -1,4 +1,4 @@
-package com.example.harsh.mobilep2p;
+package com.example.harsh.mobilep2p.types;
 
 import java.io.Serializable;
 

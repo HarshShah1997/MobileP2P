@@ -1,4 +1,4 @@
-package com.example.harsh.mobilep2p;
+package com.example.harsh.mobilep2p.activity;
 
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
@@ -8,9 +8,11 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
-import java.util.ArrayList;
+import com.example.harsh.mobilep2p.R;
+import com.example.harsh.mobilep2p.types.IntentConstants;
+import com.example.harsh.mobilep2p.types.SystemResources;
+
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class DevicesListActivity extends AppCompatActivity {
@@ -58,13 +60,8 @@ public class DevicesListActivity extends AppCompatActivity {
     private void addTableRow(String hostAddress) {
         TableLayout tableLayout = (TableLayout) findViewById(R.id.tableLayout);
         TableRow row = new TableRow(DevicesListActivity.this);
-        row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
-
-        TextView ipAddrView = createTextView(hostAddress);
-
-        row.addView(ipAddrView);
+        row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
         tableLayout.addView(row);
-
         tableRowMap.put(hostAddress, row);
     }
 

@@ -1,9 +1,7 @@
-package com.example.harsh.mobilep2p;
+package com.example.harsh.mobilep2p.activity;
 
 import android.content.Intent;
-import android.net.DhcpInfo;
 import android.net.wifi.WifiManager;
-import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -16,22 +14,26 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.harsh.mobilep2p.util.DeviceUtils;
+import com.example.harsh.mobilep2p.FileListInfo;
+import com.example.harsh.mobilep2p.types.FileMetadata;
+import com.example.harsh.mobilep2p.R;
+import com.example.harsh.mobilep2p.types.CommandTypes;
+import com.example.harsh.mobilep2p.types.IntentConstants;
+import com.example.harsh.mobilep2p.types.SystemResources;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.math.BigInteger;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -40,16 +42,16 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int PORT = 6578;
     private static final int BUFF_SIZE = 4096;
-    private static final String UPLOAD_DIRECTORY = "/Upload";
-    private static final int TEXTVIEW_SIZE = 8;
+    private static final int TEXTVIEW_SIZE = 10;
 
     private String smartHead = "";
     private List<String> hostAddresses = new ArrayList<>();
     private HashMap<String, SystemResources> resourcesMap = new HashMap<>();
-    private List<FileMetadata> filesList = new ArrayList<>();
+    private List<FileMetadata> deviceFilesList = new ArrayList<>();
 
     private Gson gson = new Gson();
-    private HeadInfoUtils headInfoUtils = new HeadInfoUtils();
+    private FileListInfo fileListInfo = new FileListInfo();
+    private DeviceUtils deviceUtils = new DeviceUtils();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
 
         acquireMulticastLock();
         startReceiveBroadcast();
-        getFilesFromDevice();
+        deviceFilesList = deviceUtils.getFilesFromDevice();
         announcePresence();
         startElection();
     }
@@ -86,47 +88,14 @@ public class MainActivity extends AppCompatActivity {
                     DatagramSocket socket = new DatagramSocket();
                     socket.setBroadcast(true);
                     byte[] sendData = message.getBytes();
-                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, getBroadcastAddress(), PORT);
+                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, deviceUtils.getBroadcastAddress(MainActivity.this), PORT);
                     socket.send(sendPacket);
-                    Log.d(TAG, "Broadcast packet sent to: " + getBroadcastAddress().getHostAddress());
+                    Log.d(TAG, "Broadcast packet sent to: " + deviceUtils.getBroadcastAddress(MainActivity.this).getHostAddress());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }).start();
-    }
-
-    private InetAddress getBroadcastAddress() throws IOException {
-        WifiManager wifi = (WifiManager) MainActivity.this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        DhcpInfo dhcp = wifi.getDhcpInfo();
-        // handle null somehow
-
-        int broadcast = (dhcp.ipAddress & dhcp.netmask) | ~dhcp.netmask;
-        byte[] quads = new byte[4];
-        for (int k = 0; k < 4; k++)
-            quads[k] = (byte) ((broadcast >> k * 8) & 0xFF);
-        return InetAddress.getByAddress(quads);
-    }
-
-    private InetAddress getDeviceIPAddress() {
-        WifiManager wifiManager = (WifiManager) MainActivity.this.getApplicationContext().getSystemService(WIFI_SERVICE);
-        int ipAddressInt = wifiManager.getConnectionInfo().getIpAddress();
-
-        // Convert little-endian to big-endianif needed
-        if (ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
-            ipAddressInt = Integer.reverseBytes(ipAddressInt);
-        }
-
-        byte[] ipByteArray = BigInteger.valueOf(ipAddressInt).toByteArray();
-
-        InetAddress ipAddress;
-        try {
-            ipAddress = InetAddress.getByAddress(ipByteArray);
-        } catch (UnknownHostException ex) {
-            Log.e(TAG, "Unable to get host address.");
-            ipAddress = null;
-        }
-        return ipAddress;
     }
 
     private void showMessageAsToast(final String message) {
@@ -158,10 +127,10 @@ public class MainActivity extends AppCompatActivity {
         if (data.equals(CommandTypes.NEW)) {
             addHostAddress(hostAddress);
             sendPresence();
-            if (getDeviceIPAddress().getHostAddress().equals(smartHead)) {
+            if (deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress().equals(smartHead)) {
                 sendBroadcast(CommandTypes.NEW_SMART_HEAD + smartHead);
             }
-            sendFilesList(filesList);
+            sendFilesList(deviceFilesList);
         } else if (data.startsWith(CommandTypes.PRESENT)) {
             addHostAddress(hostAddress);
             addResources(hostAddress, data);
@@ -182,7 +151,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void addResources(String hostAddress, String data) {
         String json = data.substring(CommandTypes.PRESENT.length());
-        Log.i(TAG, "JSON String: " + json);
         SystemResources resources = gson.fromJson(json, SystemResources.class);
         resourcesMap.put(hostAddress, resources);
     }
@@ -254,20 +222,6 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    private void getFilesFromDevice() {
-        String path = Environment.getExternalStorageDirectory().toString() + UPLOAD_DIRECTORY;
-        File directory = new File(path);
-        File[] files = directory.listFiles();
-        for (int i = 0; files != null && i < files.length; i++)
-        {
-            FileMetadata fileMetadata = new FileMetadata();
-            Log.d(TAG, "Device Filename:" + files[i].getName());
-            fileMetadata.setFileName(files[i].getName());
-            fileMetadata.setFileSize(files[i].length());
-            filesList.add(fileMetadata);
-        }
-    }
-
     // Broadcasts own files list
     private void sendFilesList(List<FileMetadata> filesList) {
         String json = gson.toJson(filesList);
@@ -278,8 +232,8 @@ public class MainActivity extends AppCompatActivity {
     private void updateFilesList(String json, String hostAddress) {
         Type typeListFileMetadata = new TypeToken<ArrayList<FileMetadata>>(){}.getType();
         List<FileMetadata> receivedFilesList = gson.fromJson(json, typeListFileMetadata);
-        headInfoUtils.addFilesList(receivedFilesList, hostAddress);
-        Log.d(TAG, "Files in the network: " + headInfoUtils.getFiles());
+        fileListInfo.addFilesList(receivedFilesList, hostAddress);
+        Log.d(TAG, "Files in the network: " + fileListInfo.getFiles());
         refreshFilesListUI();
     }
 
@@ -287,7 +241,7 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                for (FileMetadata file : headInfoUtils.getFiles()) {
+                for (FileMetadata file : fileListInfo.getFiles()) {
                     addTableRow(file.getFileName(), file.getFileSize());
                 }
             }
@@ -298,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
         String fileSizeString = getFileSizeString(fileSize);
         TableLayout tableLayout = (TableLayout) findViewById(R.id.filesListLayout);
         TableRow row = new TableRow(MainActivity.this);
-        row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
+        row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
 
         row.addView(createTextView(fileName));
         row.addView(createTextView(fileSizeString));
@@ -321,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
             suffixPointer++;
             size = size / 1024;
         }
-        return String.format("%.2f %s", size, fileSizeSuffixes.get(suffixPointer));
+        return String.format(Locale.ENGLISH, "%.2f %s", size, fileSizeSuffixes.get(suffixPointer));
     }
 
     public void sendFile(View view) {

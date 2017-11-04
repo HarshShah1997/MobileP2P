@@ -1,4 +1,6 @@
 package com.example.harsh.mobilep2p;
+import com.example.harsh.mobilep2p.types.FileMetadata;
+
 import java.io.Serializable;
 import java.util.*;
 
@@ -7,7 +9,7 @@ import java.util.*;
  * Created by dell on 10/29/2017.
  */
 
-public class HeadInfoUtils implements Serializable {
+public class FileListInfo implements Serializable {
 
     private List<FileMetadata> files = new ArrayList<FileMetadata>();
 

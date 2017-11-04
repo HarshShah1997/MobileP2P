@@ -1,4 +1,4 @@
-package com.example.harsh.mobilep2p;
+package com.example.harsh.mobilep2p.types;
 
 import android.app.ActivityManager;
 import android.content.Context;

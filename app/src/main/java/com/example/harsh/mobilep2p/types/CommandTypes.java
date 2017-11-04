@@ -1,4 +1,4 @@
-package com.example.harsh.mobilep2p;
+package com.example.harsh.mobilep2p.types;
 
 /**
  * Created by Harsh on 9/8/2017.

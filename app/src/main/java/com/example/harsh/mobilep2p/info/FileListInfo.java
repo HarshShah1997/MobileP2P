@@ -1,4 +1,4 @@
-package com.example.harsh.mobilep2p;
+package com.example.harsh.mobilep2p.info;
 import com.example.harsh.mobilep2p.types.FileMetadata;
 
 import java.io.Serializable;

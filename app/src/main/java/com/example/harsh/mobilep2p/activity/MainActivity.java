@@ -14,8 +14,9 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.harsh.mobilep2p.info.ResourcesInfo;
 import com.example.harsh.mobilep2p.util.DeviceUtils;
-import com.example.harsh.mobilep2p.FileListInfo;
+import com.example.harsh.mobilep2p.info.FileListInfo;
 import com.example.harsh.mobilep2p.types.FileMetadata;
 import com.example.harsh.mobilep2p.R;
 import com.example.harsh.mobilep2p.types.CommandTypes;
@@ -45,12 +46,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int TEXTVIEW_SIZE = 10;
 
     private String smartHead = "";
-    private List<String> hostAddresses = new ArrayList<>();
-    private HashMap<String, SystemResources> resourcesMap = new HashMap<>();
     private List<FileMetadata> deviceFilesList = new ArrayList<>();
 
     private Gson gson = new Gson();
     private FileListInfo fileListInfo = new FileListInfo();
+    private ResourcesInfo resourcesInfo = new ResourcesInfo();
     private DeviceUtils deviceUtils = new DeviceUtils();
 
     @Override
@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
 
         acquireMulticastLock();
         startReceiveBroadcast();
-        deviceFilesList = deviceUtils.getFilesFromDevice();
+        getFilesFromDevice();
         announcePresence();
         startElection();
     }
@@ -125,34 +125,17 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, String.format("Packet received from: %s Data: %s", hostAddress, data));
 
         if (data.equals(CommandTypes.NEW)) {
-            addHostAddress(hostAddress);
-            sendPresence();
-            if (deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress().equals(smartHead)) {
-                sendBroadcast(CommandTypes.NEW_SMART_HEAD + smartHead);
-            }
-            sendFilesList(deviceFilesList);
+            handleNewDevice(hostAddress);
         } else if (data.startsWith(CommandTypes.PRESENT)) {
-            addHostAddress(hostAddress);
-            addResources(hostAddress, data);
+            resourcesInfo.addHostAddress(hostAddress);
+            String json = data.substring(CommandTypes.PRESENT.length());
+            SystemResources resources = gson.fromJson(json, SystemResources.class);
+            resourcesInfo.addResources(hostAddress, resources);
         } else if (data.startsWith(CommandTypes.NEW_SMART_HEAD)) {
             updateSmartHead(data.substring(CommandTypes.NEW_SMART_HEAD.length()));
         } else if (data.startsWith(CommandTypes.FILES_LIST)) {
             updateFilesList(data.substring(CommandTypes.FILES_LIST.length()), hostAddress);
         }
-    }
-
-    private void addHostAddress(final String hostAddress) {
-        if (hostAddresses.contains(hostAddress)) {
-            return;
-        }
-        hostAddresses.add(hostAddress);
-
-    }
-
-    private void addResources(String hostAddress, String data) {
-        String json = data.substring(CommandTypes.PRESENT.length());
-        SystemResources resources = gson.fromJson(json, SystemResources.class);
-        resourcesMap.put(hostAddress, resources);
     }
 
     private void sendPresence() {
@@ -173,42 +156,11 @@ public class MainActivity extends AppCompatActivity {
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
-                String newSmartHead = findSmartHead();
+                String newSmartHead = resourcesInfo.findSmartHead();
                 String oldSmartHead = smartHead;
                 sendBroadcast(CommandTypes.NEW_SMART_HEAD + newSmartHead);
             }
         }, 5000);
-    }
-
-    private String findSmartHead() {
-        String maxHostCharging = "";
-        double maxWeightCharging = 0;
-        String maxHostNotCharging = "";
-        double maxWeightNotCharging = 0;
-
-        for (String hostAddress : hostAddresses) {
-            SystemResources resources = resourcesMap.get(hostAddress);
-            int batteryLevel = Integer.parseInt(resources.getBatteryLevel());
-            int ram = Integer.parseInt(resources.getAvailableMemory());
-            if (resources.getBatteryStatus().equals("CHARGING") && batteryLevel > 30) {
-                double currWeightCharging = 0.75 * batteryLevel + 0.25 * ram;
-                if (currWeightCharging > maxWeightCharging) {
-                    maxWeightCharging = currWeightCharging;
-                    maxHostCharging = hostAddress;
-                }
-            } else {
-                double currWeightNotCharging = 0.75 * batteryLevel + 0.25 * ram;
-                if (currWeightNotCharging > maxWeightNotCharging) {
-                    maxWeightNotCharging = currWeightNotCharging;
-                    maxHostNotCharging = hostAddress;
-                }
-            }
-        }
-        if (maxWeightCharging > 0) {
-            return maxHostCharging;
-        } else {
-            return maxHostNotCharging;
-        }
     }
 
     private void updateSmartHead(final String newSmartHead) {
@@ -217,9 +169,18 @@ public class MainActivity extends AppCompatActivity {
 
     public void showDevices(View view) {
         Intent intent = new Intent(this, DevicesListActivity.class);
-        intent.putExtra(IntentConstants.RESOURCES_MAP, resourcesMap);
+        intent.putExtra(IntentConstants.RESOURCES_MAP, resourcesInfo.getResourcesMap());
         intent.putExtra(IntentConstants.SMART_HEAD, smartHead);
         startActivity(intent);
+    }
+
+    private void handleNewDevice(String hostAddress) {
+        resourcesInfo.addHostAddress(hostAddress);
+        sendPresence();
+        if (isSmartHead()) {
+            sendBroadcast(CommandTypes.NEW_SMART_HEAD + smartHead);
+        }
+        sendFilesList(deviceFilesList);
     }
 
     // Broadcasts own files list
@@ -276,6 +237,19 @@ public class MainActivity extends AppCompatActivity {
             size = size / 1024;
         }
         return String.format(Locale.ENGLISH, "%.2f %s", size, fileSizeSuffixes.get(suffixPointer));
+    }
+
+    private boolean isSmartHead() {
+        if (deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress().equals(smartHead)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private void getFilesFromDevice() {
+        deviceFilesList = deviceUtils.getFilesFromDevice();
+        Log.d(TAG, "Device files: " + deviceFilesList);
     }
 
     public void sendFile(View view) {

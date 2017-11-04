@@ -27,7 +27,6 @@ public class HeadInfoUtils implements Serializable {
         return fileLocations;
     }
 
-
     public void addFilesList(List<FileMetadata> receivedFileList, String node) {
         for (FileMetadata receivedFile : receivedFileList) {
             addFileInfo(receivedFile, node);
@@ -36,7 +35,7 @@ public class HeadInfoUtils implements Serializable {
 
     public void addFileInfo(FileMetadata receivedFile, String node) {
         for (FileMetadata f : files) {
-            if (f.getFilename().equals(receivedFile.getFilename()) && f.getFilesize() == receivedFile.getFilesize()) {
+            if (f.getFileName().equals(receivedFile.getFileName()) && f.getFileSize() == receivedFile.getFileSize()) {
                 addFileLocations(receivedFile, node);
                 addNodesContent(receivedFile, node);
                 return;
@@ -52,26 +51,27 @@ public class HeadInfoUtils implements Serializable {
         if(fileLocations.containsKey(receivedFile) && !fileLocations.get(receivedFile).contains(node)) {
             fileLocations.get(receivedFile).add(node);
         } else {
-            ArrayList<String>list = new ArrayList<String>();
+            List<String> list = new ArrayList<>();
             list.add(node);
             fileLocations.put(receivedFile, list);
         }
     }
 
     public void addNodesContent(FileMetadata receivedFile, String node){
-        if(nodesContent.containsKey(node)){
+        if(nodesContent.containsKey(node) && !nodesContent.get(node).contains(receivedFile)){
             nodesContent.get(node).add(receivedFile);
         } else {
-            ArrayList<FileMetadata>list = new ArrayList<FileMetadata>();
+            List<FileMetadata> list = new ArrayList<>();
             list.add(receivedFile);
-            nodesContent.put(node,list);
+            nodesContent.put(node, list);
         }
     }
 
     public FileMetadata getFile(String fileName, long fileSize){
         for (FileMetadata f : files){
-            if(f.getFilename().equals(fileName))
+            if (f.getFileName().equals(fileName) && f.getFileSize() == fileSize) {
                 return f;
+            }
         }
         throw new IllegalArgumentException("no such file present");
     }

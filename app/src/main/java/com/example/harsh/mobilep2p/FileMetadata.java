@@ -1,8 +1,6 @@
 package com.example.harsh.mobilep2p;
 
-import java.io.File;
 import java.io.Serializable;
-import java.util.ArrayList;
 
 /**
  * Created by dell on 10/29/2017.
@@ -10,37 +8,42 @@ import java.util.ArrayList;
 
 public class FileMetadata implements Serializable {
 
-    private String filename;
+    private String fileName;
 
-    private long filesize;
+    private long fileSize;
 
-    public void setFilename(String filename) {
+    public void setFileName(String fileName) {
 
-        this.filename = filename;
+        this.fileName = fileName;
     }
 
-    public void setFilesize(long filesize) {
+    public void setFileSize(long fileSize) {
 
-        this.filesize = filesize;
+        this.fileSize = fileSize;
     }
 
-    public String getFilename() {
+    public String getFileName() {
 
-        return filename;
+        return fileName;
     }
 
-    public long getFilesize() {
+    public long getFileSize() {
 
-        return filesize;
+        return fileSize;
     }
 
     @Override
     public boolean equals(Object second) {
         FileMetadata otherFile = (FileMetadata) second;
-        if (this.getFilename().equals(otherFile.getFilename()) && this.getFilesize() == otherFile.getFilesize()) {
+        if (this.getFileName().equals(otherFile.getFileName()) && this.getFileSize() == otherFile.getFileSize()) {
             return true;
         } else {
             return false;
         }
+    }
+
+    @Override
+    public String toString() {
+        return fileName;
     }
 }

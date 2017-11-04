@@ -63,8 +63,6 @@ public class MainActivity extends AppCompatActivity {
             socket = new DatagramSocket(PORT, InetAddress.getByName("0.0.0.0"));
             socket.setBroadcast(true);
             while (true) {
-                Log.d(TAG, "Ready to receive packets");
-
                 byte[] recvBuf = new byte[BUFF_SIZE];
                 DatagramPacket packet = new DatagramPacket(recvBuf, recvBuf.length);
                 socket.receive(packet);
@@ -164,16 +162,7 @@ public class MainActivity extends AppCompatActivity {
         } else if (data.startsWith(CommandTypes.NEW_SMART_HEAD)) {
             updateSmartHead(data.substring(CommandTypes.NEW_SMART_HEAD.length()));
         } else if (data.startsWith(CommandTypes.FILES_LIST)) {
-            updateFilesList(data.substring(CommandTypes.FILES_LIST.length()));
-            headInfoUtils.addFilesList(filesList, hostAddress);
-        } else if (data.startsWith((CommandTypes.TRANSFER_FILES_LIST))) {
-            String oldSmartHead = data.substring(CommandTypes.TRANSFER_FILES_LIST.length());
-            transferFilesList(oldSmartHead);
-        } else if (data.startsWith(CommandTypes.HEAD_INFO)) {
-            if (getDeviceIPAddress().getHostAddress().equals(smartHead)) {
-                String message = data.substring(CommandTypes.HEAD_INFO.length());
-                updateHeadInfo(message);
-            }
+            updateFilesList(data.substring(CommandTypes.FILES_LIST.length()), hostAddress);
         }
     }
 
@@ -213,9 +202,6 @@ public class MainActivity extends AppCompatActivity {
                 String newSmartHead = findSmartHead();
                 String oldSmartHead = smartHead;
                 sendBroadcast(CommandTypes.NEW_SMART_HEAD + newSmartHead);
-                //if (!oldSmartHead.equals("") && !oldSmartHead.equals(smartHead)) {
-                //    broadcastTransferFilesList(oldSmartHead, smartHead);
-                //}
             }
         }, 5000);
     }
@@ -269,9 +255,9 @@ public class MainActivity extends AppCompatActivity {
         for (int i = 0; files != null && i < files.length; i++)
         {
             FileMetadata fileMetadata = new FileMetadata();
-            Log.d(TAG, "Filename:" + files[i].getName());
-            fileMetadata.setFilename(files[i].getName());
-            fileMetadata.setFilesize(files[i].length());
+            Log.d(TAG, "Device Filename:" + files[i].getName());
+            fileMetadata.setFileName(files[i].getName());
+            fileMetadata.setFileSize(files[i].length());
             filesList.add(fileMetadata);
         }
     }
@@ -283,41 +269,11 @@ public class MainActivity extends AppCompatActivity {
         sendBroadcast(message);
     }
 
-    private void updateFilesList(String json) {
+    private void updateFilesList(String json, String hostAddress) {
         Type typeListFileMetadata = new TypeToken<ArrayList<FileMetadata>>(){}.getType();
         List<FileMetadata> receivedFilesList = gson.fromJson(json, typeListFileMetadata);
-        for (FileMetadata receivedFile : receivedFilesList) {
-            if (!filesList.contains(receivedFile)) {
-                filesList.add(receivedFile);
-            }
-        }
-        for (FileMetadata fileMetadata : filesList) {
-            Log.d(TAG, "Network Filename:" + fileMetadata.getFilename());
-        }
-    }
-
-    private void broadcastTransferFilesList(String oldSmartHead, String newSmartHead) {
-        sendBroadcast(CommandTypes.TRANSFER_FILES_LIST + oldSmartHead);
-    }
-
-    private void transferFilesList(String oldSmartHead) {
-        if (getDeviceIPAddress().getHostAddress().equals(oldSmartHead)) {
-            String json = gson.toJson(headInfoUtils);
-            String message = CommandTypes.HEAD_INFO + json;
-            sendBroadcast(message);
-            headInfoUtils.clear();
-        }
-    }
-
-    // If device is a smart head, it will update its headinfo object
-    private void updateHeadInfo(String json) {
-        headInfoUtils = gson.fromJson(json, HeadInfoUtils.class);
-        showMessageAsToast("Transfer file list successful");
-        Log.d(TAG, "Transfer file list successful");
-        Log.d(TAG, "Files:" + headInfoUtils.getFiles());
-        Log.d(TAG, "Locations:" + headInfoUtils.getFileLocations());
-        Log.d(TAG, "Node Contains:" + headInfoUtils.getNodesContent());
-        showMessageAsToast("Files:" + headInfoUtils.getFiles());
+        headInfoUtils.addFilesList(receivedFilesList, hostAddress);
+        Log.d(TAG, "Files in the network: " + headInfoUtils.getFiles());
     }
 
     public void sendFile(View view) {

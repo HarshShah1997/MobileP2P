@@ -9,7 +9,11 @@ import android.os.Bundle;
 
 import android.content.Context;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
+import android.widget.TableLayout;
+import android.widget.TableRow;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -25,6 +29,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Timer;
@@ -36,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PORT = 6578;
     private static final int BUFF_SIZE = 4096;
     private static final String UPLOAD_DIRECTORY = "/Upload";
+    private static final int TEXTVIEW_SIZE = 8;
 
     private String smartHead = "";
     private List<String> hostAddresses = new ArrayList<>();
@@ -274,6 +280,48 @@ public class MainActivity extends AppCompatActivity {
         List<FileMetadata> receivedFilesList = gson.fromJson(json, typeListFileMetadata);
         headInfoUtils.addFilesList(receivedFilesList, hostAddress);
         Log.d(TAG, "Files in the network: " + headInfoUtils.getFiles());
+        refreshFilesListUI();
+    }
+
+    private void refreshFilesListUI() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                for (FileMetadata file : headInfoUtils.getFiles()) {
+                    addTableRow(file.getFileName(), file.getFileSize());
+                }
+            }
+        });
+    }
+
+    private void addTableRow(String fileName, long fileSize) {
+        String fileSizeString = getFileSizeString(fileSize);
+        TableLayout tableLayout = (TableLayout) findViewById(R.id.filesListLayout);
+        TableRow row = new TableRow(MainActivity.this);
+        row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
+
+        row.addView(createTextView(fileName));
+        row.addView(createTextView(fileSizeString));
+
+        tableLayout.addView(row);
+    }
+
+    private TextView createTextView(String text) {
+        TextView textView = new TextView(MainActivity.this);
+        textView.setText(text);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, TEXTVIEW_SIZE);
+        return textView;
+    }
+
+    private String getFileSizeString(long fileSize) {
+        double size = fileSize;
+        List<String> fileSizeSuffixes = new ArrayList<>(Arrays.asList("bytes", "KB", "MB", "GB"));
+        int suffixPointer = 0;
+        while (size > 1024) {
+            suffixPointer++;
+            size = size / 1024;
+        }
+        return String.format("%.2f %s", size, fileSizeSuffixes.get(suffixPointer));
     }
 
     public void sendFile(View view) {

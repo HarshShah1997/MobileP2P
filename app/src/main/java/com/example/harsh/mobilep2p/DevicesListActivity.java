@@ -60,9 +60,7 @@ public class DevicesListActivity extends AppCompatActivity {
         TableRow row = new TableRow(DevicesListActivity.this);
         row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
 
-        TextView ipAddrView = new TextView(DevicesListActivity.this);
-        ipAddrView.setText(hostAddress);
-        ipAddrView.setTextSize(TypedValue.COMPLEX_UNIT_SP, TEXTVIEW_SIZE);
+        TextView ipAddrView = createTextView(hostAddress);
 
         row.addView(ipAddrView);
         tableLayout.addView(row);

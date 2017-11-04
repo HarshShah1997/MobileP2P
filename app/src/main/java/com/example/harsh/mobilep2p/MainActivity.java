@@ -9,17 +9,11 @@ import android.os.Bundle;
 
 import android.content.Context;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.View;
-import android.widget.TableLayout;
-import android.widget.TableRow;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
-import org.w3c.dom.Text;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +27,6 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -59,9 +52,9 @@ public class MainActivity extends AppCompatActivity {
 
         acquireMulticastLock();
         startReceiveBroadcast();
+        getFilesFromDevice();
         announcePresence();
         startElection();
-        getFilesFromDevice();
     }
 
     private void receiveBroadcast() {
@@ -161,20 +154,25 @@ public class MainActivity extends AppCompatActivity {
         if (data.equals(CommandTypes.NEW)) {
             addHostAddress(hostAddress);
             sendPresence();
+            if (getDeviceIPAddress().getHostAddress().equals(smartHead)) {
+                sendBroadcast(CommandTypes.NEW_SMART_HEAD + smartHead);
+            }
+            sendFilesList(filesList);
         } else if (data.startsWith(CommandTypes.PRESENT)) {
             addHostAddress(hostAddress);
             addResources(hostAddress, data);
         } else if (data.startsWith(CommandTypes.NEW_SMART_HEAD)) {
             updateSmartHead(data.substring(CommandTypes.NEW_SMART_HEAD.length()));
         } else if (data.startsWith(CommandTypes.FILES_LIST)) {
-            Log.d(TAG, "Files list command");
             updateFilesList(data.substring(CommandTypes.FILES_LIST.length()));
-            Log.d(TAG, "Device IP Address:" + getDeviceIPAddress().getHostAddress());
+            headInfoUtils.addFilesList(filesList, hostAddress);
+        } else if (data.startsWith((CommandTypes.TRANSFER_FILES_LIST))) {
+            String oldSmartHead = data.substring(CommandTypes.TRANSFER_FILES_LIST.length());
+            transferFilesList(oldSmartHead);
+        } else if (data.startsWith(CommandTypes.HEAD_INFO)) {
             if (getDeviceIPAddress().getHostAddress().equals(smartHead)) {
-                headInfoUtils.addFilesList(filesList, hostAddress);
-                Log.d(TAG, "Files:" + headInfoUtils.getFiles());
-                Log.d(TAG, "Locations:" + headInfoUtils.getFileLocations());
-                Log.d(TAG, "Node Contains:" + headInfoUtils.getNodesContent());
+                String message = data.substring(CommandTypes.HEAD_INFO.length());
+                updateHeadInfo(message);
             }
         }
     }
@@ -215,10 +213,9 @@ public class MainActivity extends AppCompatActivity {
                 String newSmartHead = findSmartHead();
                 String oldSmartHead = smartHead;
                 sendBroadcast(CommandTypes.NEW_SMART_HEAD + newSmartHead);
-                sendFilesList(filesList);
-                if (!oldSmartHead.equals(smartHead))) {
-                    transferFilesList(oldSmartHead, smartHead);
-                }
+                //if (!oldSmartHead.equals("") && !oldSmartHead.equals(smartHead)) {
+                //    broadcastTransferFilesList(oldSmartHead, smartHead);
+                //}
             }
         }, 5000);
     }
@@ -279,6 +276,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // Broadcasts own files list
     private void sendFilesList(List<FileMetadata> filesList) {
         String json = gson.toJson(filesList);
         String message = CommandTypes.FILES_LIST + json;
@@ -298,8 +296,28 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void transferFilesList(String oldSmartHead, String newSmartHead) {
-        //sendBroadcast(TRANSFER_FILES_LIST + )
+    private void broadcastTransferFilesList(String oldSmartHead, String newSmartHead) {
+        sendBroadcast(CommandTypes.TRANSFER_FILES_LIST + oldSmartHead);
+    }
+
+    private void transferFilesList(String oldSmartHead) {
+        if (getDeviceIPAddress().getHostAddress().equals(oldSmartHead)) {
+            String json = gson.toJson(headInfoUtils);
+            String message = CommandTypes.HEAD_INFO + json;
+            sendBroadcast(message);
+            headInfoUtils.clear();
+        }
+    }
+
+    // If device is a smart head, it will update its headinfo object
+    private void updateHeadInfo(String json) {
+        headInfoUtils = gson.fromJson(json, HeadInfoUtils.class);
+        showMessageAsToast("Transfer file list successful");
+        Log.d(TAG, "Transfer file list successful");
+        Log.d(TAG, "Files:" + headInfoUtils.getFiles());
+        Log.d(TAG, "Locations:" + headInfoUtils.getFileLocations());
+        Log.d(TAG, "Node Contains:" + headInfoUtils.getNodesContent());
+        showMessageAsToast("Files:" + headInfoUtils.getFiles());
     }
 
     public void sendFile(View view) {

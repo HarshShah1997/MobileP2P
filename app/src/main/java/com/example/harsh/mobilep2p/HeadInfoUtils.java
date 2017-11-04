@@ -1,4 +1,5 @@
 package com.example.harsh.mobilep2p;
+import java.io.Serializable;
 import java.util.*;
 
 
@@ -6,7 +7,13 @@ import java.util.*;
  * Created by dell on 10/29/2017.
  */
 
-public class HeadInfoUtils {
+public class HeadInfoUtils implements Serializable {
+
+    private List<FileMetadata> files = new ArrayList<FileMetadata>();
+
+    private Map<String, List<FileMetadata>> nodesContent = new HashMap<>();
+
+    private Map<FileMetadata, List<String>> fileLocations = new HashMap<>();
 
     public List<FileMetadata> getFiles() {
         return files;
@@ -20,11 +27,6 @@ public class HeadInfoUtils {
         return fileLocations;
     }
 
-    private List<FileMetadata> files = new ArrayList<FileMetadata>();
-
-    private Map<String, List<FileMetadata>> nodesContent = new HashMap<>();
-
-    private Map<FileMetadata, List<String>> fileLocations = new HashMap<>();
 
     public void addFilesList(List<FileMetadata> receivedFileList, String node) {
         for (FileMetadata receivedFile : receivedFileList) {
@@ -86,5 +88,11 @@ public class HeadInfoUtils {
 
     public List<FileMetadata> getListOfFiles() {
         return files;
+    }
+
+    public void clear() {
+        files = new ArrayList<>();
+        nodesContent = new HashMap<>();
+        fileLocations = new HashMap<>();
     }
 }

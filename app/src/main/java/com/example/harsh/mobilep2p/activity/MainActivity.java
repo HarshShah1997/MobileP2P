@@ -3,8 +3,6 @@ package com.example.harsh.mobilep2p.activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.wifi.WifiManager;
-import android.provider.CalendarContract;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -28,8 +26,6 @@ import com.example.harsh.mobilep2p.types.SystemResources;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
-import org.w3c.dom.Text;
-
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.DatagramPacket;
@@ -37,7 +33,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Timer;
@@ -48,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int PORT = 6578;
     private static final int BUFF_SIZE = 4096;
-    private static final int TEXTVIEW_SIZE = 16;
+    private static final int TEXT_VIEW_SIZE = 16;
     private static final int BORDER_HEIGHT = 1;
 
     private String smartHead = "";
@@ -64,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        acquireMulticastLock();
+        acquireMultiCastLock();
         startReceiveBroadcast();
         getFilesFromDevice();
         announcePresence();
@@ -152,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
         sendBroadcast(message);
     }
 
-    private void acquireMulticastLock() {
+    private void acquireMultiCastLock() {
         WifiManager wifiManager = (WifiManager) MainActivity.this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         WifiManager.MulticastLock mcastLock = wifiManager.createMulticastLock(TAG);
         mcastLock.acquire();
@@ -163,13 +158,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 String newSmartHead = resourcesInfo.findSmartHead();
-                String oldSmartHead = smartHead;
                 sendBroadcast(CommandTypes.NEW_SMART_HEAD + newSmartHead);
             }
         }, 5000);
     }
 
-    private void updateSmartHead(final String newSmartHead) {
+    private void updateSmartHead(String newSmartHead) {
         smartHead = newSmartHead;
     }
 
@@ -239,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView createTextView(String text) {
         TextView textView = new TextView(MainActivity.this);
         textView.setText(text);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, TEXTVIEW_SIZE);
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, TEXT_VIEW_SIZE);
         textView.setTextColor(Color.GRAY);
         return textView;
     }
@@ -282,8 +276,24 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Device files: " + deviceFilesList);
     }
 
-    public void downloadFile(String fileName, long fileSize) {
-        showMessageAsToast(fileName);
+    private void downloadFile(String fileName, long fileSize) {
+        List<String> nodes = fileListInfo.getNodesContainingFile(fileName, fileSize);
+        Log.d(TAG, "Download requested: " + fileName + " Locations: " + nodes);
+        List<Long> fileOffsets = new ArrayList<>();
+        List<Long> fileSizes = new ArrayList<>();
+        int noOfNodes = nodes.size();
+
+        long chunkSize = fileSize / noOfNodes;
+        long startOffset = 0;
+
+        for (int i = 0; i < noOfNodes - 1; i++) {
+            fileOffsets.add(startOffset);
+            fileSizes.add(chunkSize);
+            startOffset += chunkSize;
+        }
+        fileOffsets.add(startOffset);
+        fileSizes.add(chunkSize + (fileSize % noOfNodes));
+        Log.d(TAG, "Offsets:" + fileOffsets + " Sizes:" + fileSizes);
     }
 
     public void sendFile(View view) {

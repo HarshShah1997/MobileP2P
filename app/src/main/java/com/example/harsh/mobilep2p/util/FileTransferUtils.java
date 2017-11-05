@@ -19,7 +19,7 @@ public class FileTransferUtils {
     private static final int FILE_TRANSFER_PORT = 6579;
     private static final String READ_MODE = "r";
     private static final String WRITE_MODE = "w";
-    private static final int BUFFER_SIZE = 1024;
+    private static final int BUFFER_SIZE = 4096;
 
     public void sendFile(String ipAddress, String filename, long startOffset, long size) throws IOException{
 

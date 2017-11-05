@@ -1,7 +1,10 @@
 package com.example.harsh.mobilep2p.activity;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.wifi.WifiManager;
+import android.provider.CalendarContract;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -25,6 +28,8 @@ import com.example.harsh.mobilep2p.types.SystemResources;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import org.w3c.dom.Text;
+
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.DatagramPacket;
@@ -43,7 +48,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int PORT = 6578;
     private static final int BUFF_SIZE = 4096;
-    private static final int TEXTVIEW_SIZE = 10;
+    private static final int TEXTVIEW_SIZE = 16;
+    private static final int BORDER_HEIGHT = 1;
 
     private String smartHead = "";
     private List<FileMetadata> deviceFilesList = new ArrayList<>();
@@ -209,22 +215,46 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void addTableRow(String fileName, long fileSize) {
+    private void addTableRow(final String fileName, final long fileSize) {
         String fileSizeString = getFileSizeString(fileSize);
         TableLayout tableLayout = (TableLayout) findViewById(R.id.filesListLayout);
         TableRow row = new TableRow(MainActivity.this);
         row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
 
-        row.addView(createTextView(fileName));
-        row.addView(createTextView(fileSizeString));
+        row.addView(createTextView(fileName + "\n" + fileSizeString));
+
+        row.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                downloadFile(fileName, fileSize);
+            }
+        });
+
+        TableRow emptyRow = createEmptyRow();
 
         tableLayout.addView(row);
+        tableLayout.addView(emptyRow);
     }
 
     private TextView createTextView(String text) {
         TextView textView = new TextView(MainActivity.this);
         textView.setText(text);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, TEXTVIEW_SIZE);
+        textView.setTextColor(Color.GRAY);
+        return textView;
+    }
+
+    private TableRow createEmptyRow() {
+        TableRow emptyRow = new TableRow(MainActivity.this);
+        emptyRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, BORDER_HEIGHT));
+        emptyRow.setBackgroundColor(Color.BLACK);
+        emptyRow.addView(createEmptyLine());
+        return emptyRow;
+    }
+
+    private TextView createEmptyLine() {
+        TextView textView = new TextView(MainActivity.this);
+        textView.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, BORDER_HEIGHT));
         return textView;
     }
 
@@ -250,6 +280,10 @@ public class MainActivity extends AppCompatActivity {
     private void getFilesFromDevice() {
         deviceFilesList = deviceUtils.getFilesFromDevice();
         Log.d(TAG, "Device files: " + deviceFilesList);
+    }
+
+    public void downloadFile(String fileName, long fileSize) {
+        showMessageAsToast(fileName);
     }
 
     public void sendFile(View view) {

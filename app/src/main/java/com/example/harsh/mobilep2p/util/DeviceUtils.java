@@ -4,7 +4,9 @@ import android.content.Context;
 import android.net.DhcpInfo;
 import android.net.wifi.WifiManager;
 import android.os.Environment;
+import android.util.Log;
 
+import com.example.harsh.mobilep2p.activity.MainActivity;
 import com.example.harsh.mobilep2p.types.FileMetadata;
 
 import java.io.File;
@@ -14,6 +16,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -22,7 +25,7 @@ import java.util.List;
 
 public class DeviceUtils {
 
-    private static final String UPLOAD_DIRECTORY = "/Upload";
+    private static final String UPLOAD_DIRECTORY = "/Upload/";
 
     public InetAddress getBroadcastAddress(Context context) throws IOException {
         WifiManager wifi = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
@@ -57,9 +60,10 @@ public class DeviceUtils {
     }
 
     public List<FileMetadata> getFilesFromDevice() {
-        String path = Environment.getExternalStorageDirectory().toString() + UPLOAD_DIRECTORY;
+        //String path = Environment.getDataDirectory() + UPLOAD_DIRECTORY;
         List<FileMetadata> filesList = new ArrayList<>();
-        File directory = new File(path);
+        //File directory = new File(path, UPLOAD_DIRECTORY);
+        File directory = new File(Environment.getExternalStorageDirectory(), UPLOAD_DIRECTORY);
         File[] files = directory.listFiles();
         for (int i = 0; files != null && i < files.length; i++)
         {

@@ -202,6 +202,8 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                TableLayout tableLayout = (TableLayout) findViewById(R.id.filesListLayout);
+                tableLayout.removeAllViews();
                 for (FileMetadata file : fileListInfo.getFiles()) {
                     addTableRow(file.getFileName(), file.getFileSize());
                 }

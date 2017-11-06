@@ -60,10 +60,9 @@ public class DeviceUtils {
     }
 
     public List<FileMetadata> getFilesFromDevice() {
-        //String path = Environment.getDataDirectory() + UPLOAD_DIRECTORY;
         List<FileMetadata> filesList = new ArrayList<>();
-        //File directory = new File(path, UPLOAD_DIRECTORY);
         File directory = new File(Environment.getExternalStorageDirectory(), UPLOAD_DIRECTORY);
+        directory.setReadable(true);
         File[] files = directory.listFiles();
         for (int i = 0; files != null && i < files.length; i++)
         {

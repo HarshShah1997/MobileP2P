@@ -43,6 +43,11 @@ public class FileMetadata implements Serializable {
     }
 
     @Override
+    public int hashCode() {
+        return fileName.hashCode();
+    }
+
+    @Override
     public String toString() {
         return fileName;
     }

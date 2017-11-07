@@ -16,6 +16,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.harsh.mobilep2p.info.ResourcesInfo;
+import com.example.harsh.mobilep2p.types.TransferRequest;
 import com.example.harsh.mobilep2p.util.DeviceUtils;
 import com.example.harsh.mobilep2p.info.FileListInfo;
 import com.example.harsh.mobilep2p.types.FileMetadata;
@@ -91,7 +92,6 @@ public class MainActivity extends AppCompatActivity {
                     byte[] sendData = message.getBytes();
                     DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, deviceUtils.getBroadcastAddress(MainActivity.this), PORT);
                     socket.send(sendPacket);
-                    Log.d(TAG, "Broadcast packet sent to: " + deviceUtils.getBroadcastAddress(MainActivity.this).getHostAddress());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -136,6 +136,8 @@ public class MainActivity extends AppCompatActivity {
             updateSmartHead(data.substring(CommandTypes.NEW_SMART_HEAD.length()));
         } else if (data.startsWith(CommandTypes.FILES_LIST)) {
             updateFilesList(data.substring(CommandTypes.FILES_LIST.length()), hostAddress);
+        } else if (data.startsWith(CommandTypes.SEND_FILE)) {
+            sendFile(data.substring(CommandTypes.SEND_FILE.length()));
         }
     }
 
@@ -196,6 +198,13 @@ public class MainActivity extends AppCompatActivity {
         fileListInfo.addFilesList(receivedFilesList, hostAddress);
         Log.d(TAG, "Files in the network: " + fileListInfo.getFiles());
         refreshFilesListUI();
+    }
+
+    private void sendFile(String json) {
+        TransferRequest transferRequest = gson.fromJson(json, TransferRequest.class);
+        if (transferRequest.getFromIPAddress().equals(deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress())) {
+            Log.d(TAG, "Sending file:" + transferRequest.getFileName() + " to: " + transferRequest.getToIPAddress());
+        }
     }
 
     private void refreshFilesListUI() {
@@ -279,32 +288,44 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void downloadFile(String fileName, long fileSize) {
+        // TODO: Check if file is present in device or not
         List<String> nodes = fileListInfo.getNodesContainingFile(fileName, fileSize);
         Log.d(TAG, "Download requested: " + fileName + " Locations: " + nodes);
-        List<Long> fileOffsets = new ArrayList<>();
-        List<Long> fileSizes = new ArrayList<>();
+        List<TransferRequest> transferRequests = generateTransferRequests(fileName, fileSize, nodes);
+        for (TransferRequest transferRequest : transferRequests) {
+            Log.d(TAG, "FileName:" + transferRequest.getFileName() +
+                    " From:" + transferRequest.getFromIPAddress() +
+                    " To:" + transferRequest.getToIPAddress() +
+                    " Offset:" + transferRequest.getStartOffset() +
+                    " Size:" + transferRequest.getSize());
+            sendDownloadRequest(transferRequest);
+        }
+    }
+
+    private List<TransferRequest> generateTransferRequests(String fileName, long fileSize, List<String> nodes) {
+        List<TransferRequest> transferRequests = new ArrayList<>();
         int noOfNodes = nodes.size();
 
         long chunkSize = fileSize / noOfNodes;
         long startOffset = 0;
 
-        for (int i = 0; i < noOfNodes - 1; i++) {
-            fileOffsets.add(startOffset);
-            fileSizes.add(chunkSize);
+        TransferRequest transferRequest = new TransferRequest();
+        transferRequest.setFileName(fileName);
+        transferRequest.setToIPAddress(deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress());
+        for (int i = 0; i < noOfNodes; i++) {
+            transferRequest.setStartOffset(startOffset);
+            transferRequest.setSize(chunkSize);
+            transferRequest.setFromIPAddress(nodes.get(i));
+            transferRequests.add(transferRequest);
             startOffset += chunkSize;
         }
-        fileOffsets.add(startOffset);
-        fileSizes.add(chunkSize + (fileSize % noOfNodes));
-        Log.d(TAG, "Offsets:" + fileOffsets + " Sizes:" + fileSizes);
+        transferRequests.get(noOfNodes - 1).setSize(chunkSize + (fileSize % noOfNodes));
+        return transferRequests;
     }
 
-    public void sendFile(View view) {
-        //TextView sendIPAddressView = (TextView) getViewById
-        //String filename = "example";
-        //String ipAddress =
-    }
-
-    public void receiveFile(View view) {
-
+    private void sendDownloadRequest(TransferRequest transferRequest) {
+        String json = gson.toJson(transferRequest);
+        String message = CommandTypes.SEND_FILE + json;
+        sendBroadcast(message);
     }
 }

@@ -17,4 +17,6 @@ public class CommandTypes {
     public static final String TRANSFER_FILES_LIST = "transferfileslist";
 
     public static final String HEAD_INFO = "headinfo";
+
+    public static final String SEND_FILE = "sendfile";
 }

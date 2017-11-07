@@ -1,5 +1,4 @@
 package com.example.harsh.mobilep2p.info;
-import android.util.Log;
 
 import com.example.harsh.mobilep2p.types.FileMetadata;
 
@@ -52,13 +51,11 @@ public class FileListInfo implements Serializable {
     }
 
     public void addFileLocations(FileMetadata receivedFile, String node){
-        Log.d("MainActivity", "File: " + receivedFile);
         if(fileLocations.containsKey(receivedFile)) {
             if (!fileLocations.get(receivedFile).contains(node)) {
                 fileLocations.get(receivedFile).add(node);
             }
         } else {
-            Log.d("MainActivity", "Else");
             List<String> list = new ArrayList<>();
             list.add(node);
             fileLocations.put(receivedFile, list);

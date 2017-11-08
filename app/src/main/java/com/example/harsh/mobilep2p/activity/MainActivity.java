@@ -1,8 +1,10 @@
 package com.example.harsh.mobilep2p.activity;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.wifi.WifiManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -192,7 +194,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateFilesList(String json, String hostAddress) {
-        Type typeListFileMetadata = new TypeToken<ArrayList<FileMetadata>>() {}.getType();
+        Type typeListFileMetadata = new TypeToken<ArrayList<FileMetadata>>() {
+        }.getType();
         List<FileMetadata> receivedFilesList = gson.fromJson(json, typeListFileMetadata);
         fileListInfo.addFilesList(receivedFilesList, hostAddress);
         Log.d(TAG, "Files in the network: " + fileListInfo.getFiles());
@@ -202,7 +205,7 @@ public class MainActivity extends AppCompatActivity {
     private void sendFile(String json) {
         final TransferRequest transferRequest = gson.fromJson(json, TransferRequest.class);
         if (transferRequest.getFromIPAddress().equals(deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress())) {
-            Log.d(TAG, "Sending file:" + transferRequest.getFileName() +" Size:" + transferRequest.getSize() + " to: " + transferRequest.getToIPAddress());
+            Log.d(TAG, "Sending file:" + transferRequest.getFileName() + " Size:" + transferRequest.getSize() + " to: " + transferRequest.getToIPAddress());
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -298,7 +301,19 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Device files: " + deviceFilesList);
     }
 
-    private void downloadFile(String fileName, long fileSize) {
+    private void downloadFile(final String fileName, final long fileSize) {
+        new AlertDialog.Builder(this)
+                .setMessage("Confirm download?")
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        startDownload(fileName, fileSize);
+                    }
+                })
+                .setNegativeButton(android.R.string.no, null).show();
+    }
+
+    private void startDownload(String fileName, long fileSize) {
         // TODO: Check if file is present in device or not
         List<String> nodes = fileListInfo.getNodesContainingFile(fileName, fileSize);
         Log.d(TAG, "Download requested: " + fileName + " Locations: " + nodes);

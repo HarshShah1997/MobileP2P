@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        acquireMultiCastLock();
+        deviceUtils.acquireMultiCastLock(MainActivity.this);
         startReceiveBroadcast();
         getFilesFromDevice();
         announcePresence();
@@ -130,10 +130,7 @@ public class MainActivity extends AppCompatActivity {
         if (data.equals(CommandTypes.NEW)) {
             handleNewDevice(hostAddress);
         } else if (data.startsWith(CommandTypes.PRESENT)) {
-            resourcesInfo.addHostAddress(hostAddress);
-            String json = data.substring(CommandTypes.PRESENT.length());
-            SystemResources resources = gson.fromJson(json, SystemResources.class);
-            resourcesInfo.addResources(hostAddress, resources);
+            handlePresentCommand(data.substring(CommandTypes.PRESENT.length()), hostAddress);
         } else if (data.startsWith(CommandTypes.NEW_SMART_HEAD)) {
             updateSmartHead(data.substring(CommandTypes.NEW_SMART_HEAD.length()));
         } else if (data.startsWith(CommandTypes.FILES_LIST)) {
@@ -149,12 +146,6 @@ public class MainActivity extends AppCompatActivity {
         String json = gson.toJson(resources);
         message += json;
         sendBroadcast(message);
-    }
-
-    private void acquireMultiCastLock() {
-        WifiManager wifiManager = (WifiManager) MainActivity.this.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        WifiManager.MulticastLock mcastLock = wifiManager.createMulticastLock(TAG);
-        mcastLock.acquire();
     }
 
     private void startElection() {
@@ -185,6 +176,12 @@ public class MainActivity extends AppCompatActivity {
             sendBroadcast(CommandTypes.NEW_SMART_HEAD + smartHead);
         }
         sendFilesList(deviceFilesList);
+    }
+
+    private void handlePresentCommand(String json, String hostAddress) {
+        resourcesInfo.addHostAddress(hostAddress);
+        SystemResources resources = gson.fromJson(json, SystemResources.class);
+        resourcesInfo.addResources(hostAddress, resources);
     }
 
     // Broadcasts own files list
@@ -317,7 +314,6 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     try {
                         fileTransferUtils.receiveFile(transferRequest);
-                        showMessageAsToast("Download successful");
                     } catch (IOException e) {
                         showMessageAsToast("Download failed");
                         Log.e(TAG, e.getMessage());
@@ -329,6 +325,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private List<TransferRequest> generateTransferRequests(String fileName, long fileSize, List<String> nodes) {
+        // TODO: Perform weighted division
         List<TransferRequest> transferRequests = new ArrayList<>();
         int noOfNodes = nodes.size();
 

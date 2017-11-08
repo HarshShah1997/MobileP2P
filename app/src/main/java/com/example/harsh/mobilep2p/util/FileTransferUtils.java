@@ -29,7 +29,7 @@ public class FileTransferUtils {
     private static final int BUFFER_SIZE = 4096;
     private static final String DOWNLOAD_DIRECTORY = "/P2PDownload/";
     private static final String UPLOAD_DIRECTORY = "/Upload/";
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "FileTransferUtils";
 
     public void sendFile(TransferRequest transferRequest) throws IOException {
 
@@ -48,7 +48,7 @@ public class FileTransferUtils {
             bytesRead += length;
             outgoingStream.write(buffer, 0, length);
         }
-        Log.d(TAG, "Bytes Read:" + bytesRead);
+        Log.d(TAG, "Bytes Sent:" + bytesRead);
 
         file.close();
         outgoingStream.close();
@@ -60,7 +60,6 @@ public class FileTransferUtils {
         FileChannel fileChannel = file.getChannel();
         fileChannel.position(transferRequest.getStartOffset());
 
-        Log.d(TAG, "Socket opening");
         ServerSocket serverSocket = new ServerSocket(FILE_TRANSFER_PORT);
         Socket clientSocket = serverSocket.accept();
         Log.d(TAG, "Client accepted");

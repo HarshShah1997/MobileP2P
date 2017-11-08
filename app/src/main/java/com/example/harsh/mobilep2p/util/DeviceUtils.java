@@ -26,7 +26,9 @@ import java.util.List;
 public class DeviceUtils {
 
     private static final String UPLOAD_DIRECTORY = "/Upload/";
+    private static final String TAG = "DeviceUtils";
 
+    // TODO: Get broadcast address in different way
     public InetAddress getBroadcastAddress(Context context) throws IOException {
         WifiManager wifi = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         DhcpInfo dhcp = wifi.getDhcpInfo();
@@ -72,5 +74,11 @@ public class DeviceUtils {
             filesList.add(fileMetadata);
         }
         return filesList;
+    }
+
+    public void acquireMultiCastLock(Context context) {
+        WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        WifiManager.MulticastLock mcastLock = wifiManager.createMulticastLock(TAG);
+        mcastLock.acquire();
     }
 }

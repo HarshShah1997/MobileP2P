@@ -56,7 +56,7 @@ public class SocketUtils {
     }
 
     // Reads from input stream and writes to output stream
-    private void copy(InputStream inputStream, OutputStream outputStream) throws IOException {
+    public void copy(InputStream inputStream, OutputStream outputStream) throws IOException {
         byte[] buffer = new byte[BUFFER_SIZE];
         int bytesRead = inputStream.read(buffer);
         int offset = 0;

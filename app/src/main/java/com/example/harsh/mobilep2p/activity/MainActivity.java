@@ -24,6 +24,7 @@ import com.example.harsh.mobilep2p.R;
 import com.example.harsh.mobilep2p.types.CommandTypes;
 import com.example.harsh.mobilep2p.types.IntentConstants;
 import com.example.harsh.mobilep2p.types.SystemResources;
+import com.example.harsh.mobilep2p.util.FileTransferUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -54,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     private FileListInfo fileListInfo = new FileListInfo();
     private ResourcesInfo resourcesInfo = new ResourcesInfo();
     private DeviceUtils deviceUtils = new DeviceUtils();
+    private FileTransferUtils fileTransferUtils = new FileTransferUtils();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -193,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateFilesList(String json, String hostAddress) {
-        Type typeListFileMetadata = new TypeToken<ArrayList<FileMetadata>>(){}.getType();
+        Type typeListFileMetadata = new TypeToken<ArrayList<FileMetadata>>() {}.getType();
         List<FileMetadata> receivedFilesList = gson.fromJson(json, typeListFileMetadata);
         fileListInfo.addFilesList(receivedFilesList, hostAddress);
         Log.d(TAG, "Files in the network: " + fileListInfo.getFiles());
@@ -201,9 +203,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendFile(String json) {
-        TransferRequest transferRequest = gson.fromJson(json, TransferRequest.class);
+        final TransferRequest transferRequest = gson.fromJson(json, TransferRequest.class);
         if (transferRequest.getFromIPAddress().equals(deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress())) {
-            Log.d(TAG, "Sending file:" + transferRequest.getFileName() + " to: " + transferRequest.getToIPAddress());
+            Log.d(TAG, "Sending file:" + transferRequest.getFileName() +" Size:" + transferRequest.getSize() + " to: " + transferRequest.getToIPAddress());
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        fileTransferUtils.sendFile(transferRequest);
+                        showMessageAsToast("Transfer successful");
+                    } catch (IOException e) {
+                        showMessageAsToast("Transfer failed");
+                        Log.e(TAG, e.getMessage());
+                    }
+                }
+            }).start();
         }
     }
 
@@ -292,12 +306,24 @@ public class MainActivity extends AppCompatActivity {
         List<String> nodes = fileListInfo.getNodesContainingFile(fileName, fileSize);
         Log.d(TAG, "Download requested: " + fileName + " Locations: " + nodes);
         List<TransferRequest> transferRequests = generateTransferRequests(fileName, fileSize, nodes);
-        for (TransferRequest transferRequest : transferRequests) {
+
+        for (final TransferRequest transferRequest : transferRequests) {
             Log.d(TAG, "FileName:" + transferRequest.getFileName() +
                     " From:" + transferRequest.getFromIPAddress() +
                     " To:" + transferRequest.getToIPAddress() +
                     " Offset:" + transferRequest.getStartOffset() +
                     " Size:" + transferRequest.getSize());
+            new Thread(new Runnable() {
+                public void run() {
+                    try {
+                        fileTransferUtils.receiveFile(transferRequest);
+                        showMessageAsToast("Download successful");
+                    } catch (IOException e) {
+                        showMessageAsToast("Download failed");
+                        Log.e(TAG, e.getMessage());
+                    }
+                }
+            }).start();
             sendDownloadRequest(transferRequest);
         }
     }

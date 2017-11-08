@@ -12,7 +12,7 @@ import java.util.*;
 
 public class FileListInfo implements Serializable {
 
-    private List<FileMetadata> files = new ArrayList<FileMetadata>();
+    private List<FileMetadata> files = Collections.synchronizedList(new ArrayList<FileMetadata>());
 
     private Map<String, List<FileMetadata>> nodesContent = new HashMap<>();
 

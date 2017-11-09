@@ -26,7 +26,7 @@ public class FileTransferUtils {
     private static final int FILE_TRANSFER_PORT = 6579;
     private static final String READ_MODE = "r";
     private static final String WRITE_MODE = "rw";
-    private static final int BUFFER_SIZE = 4096;
+    private static final int BUFFER_SIZE = 8192;
     private static final String DOWNLOAD_DIRECTORY = "/P2PDownload/";
     private static final String UPLOAD_DIRECTORY = "/Upload/";
     private static final String TAG = "FileTransferUtils";

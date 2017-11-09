@@ -12,6 +12,8 @@ import android.content.Context;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -37,8 +39,10 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -49,9 +53,14 @@ public class MainActivity extends AppCompatActivity {
     private static final int BUFF_SIZE = 4096;
     private static final int TEXT_VIEW_SIZE = 16;
     private static final int BORDER_HEIGHT = 1;
+    private static final String STATUS_SUCCESS = "success";
+    private static final String STATUS_FAILED = "failed";
+    private static final String STATUS_PROGRESS = "progress";
 
     private String smartHead = "";
     private List<FileMetadata> deviceFilesList = new ArrayList<>();
+    private String status = "";
+    private Map<String, TableRow> tableRowMap = new HashMap<>();
 
     private Gson gson = new Gson();
     private FileListInfo fileListInfo = new FileListInfo();
@@ -235,12 +244,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addTableRow(final String fileName, final long fileSize) {
-        String fileSizeString = getFileSizeString(fileSize);
         TableLayout tableLayout = (TableLayout) findViewById(R.id.filesListLayout);
         TableRow row = new TableRow(MainActivity.this);
         row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
 
-        row.addView(createTextView(fileName + "\n" + fileSizeString));
+        String text = generateText(fileName, fileSize);
+        row.addView(createTextView(text));
+        tableRowMap.put(text, row);
 
         row.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -307,36 +317,68 @@ public class MainActivity extends AppCompatActivity {
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
+                        status = STATUS_PROGRESS;
+                        showStatus(fileName, fileSize);
                         startDownload(fileName, fileSize);
+                        showStatus(fileName, fileSize);
                     }
                 })
                 .setNegativeButton(android.R.string.no, null).show();
     }
 
     private void startDownload(String fileName, long fileSize) {
-        // TODO: Check if file is present in device or not
         List<String> nodes = fileListInfo.getNodesContainingFile(fileName, fileSize);
         Log.d(TAG, "Download requested: " + fileName + " Locations: " + nodes);
         List<TransferRequest> transferRequests = generateTransferRequests(fileName, fileSize, nodes);
 
+        List<Thread> threads = new ArrayList<>();
+        status = STATUS_SUCCESS;
         for (final TransferRequest transferRequest : transferRequests) {
             Log.d(TAG, "FileName:" + transferRequest.getFileName() +
                     " From:" + transferRequest.getFromIPAddress() +
                     " To:" + transferRequest.getToIPAddress() +
                     " Offset:" + transferRequest.getStartOffset() +
                     " Size:" + transferRequest.getSize());
-            new Thread(new Runnable() {
+            Thread thread = new Thread(new Runnable() {
                 public void run() {
                     try {
                         fileTransferUtils.receiveFile(transferRequest);
                     } catch (IOException e) {
-                        showMessageAsToast("Download failed");
+                        status = STATUS_FAILED;
                         Log.e(TAG, e.getMessage());
                     }
                 }
-            }).start();
+            });
+            threads.add(thread);
+            thread.start();
             sendDownloadRequest(transferRequest);
         }
+        joinThreads(threads);
+    }
+
+    private void showStatus(final String fileName, final long fileSize) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                String text = generateText(fileName, fileSize);
+                TableRow row = tableRowMap.get(text);
+                row.removeAllViews();
+                ImageView imageView = new ImageView(MainActivity.this);
+                imageView.setLayoutParams(new TableRow.LayoutParams(60, 60));
+                imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                row.addView(createTextView(text));
+
+                if (status.equals(STATUS_SUCCESS)) {
+                    Log.d(TAG, "Download succeeded");
+                    imageView.setImageResource(R.mipmap.download_success);
+                } else if (status.equals(STATUS_PROGRESS)) {
+                    imageView.setImageResource(R.mipmap.download_progress);
+                } else if (status.equals(STATUS_FAILED)) {
+                    imageView.setImageResource(R.mipmap.download_failed);
+                }
+                row.addView(imageView);
+            }
+        });
     }
 
     private List<TransferRequest> generateTransferRequests(String fileName, long fileSize, List<String> nodes) {
@@ -361,9 +403,24 @@ public class MainActivity extends AppCompatActivity {
         return transferRequests;
     }
 
+    private void joinThreads(List<Thread> threads) {
+        for (Thread thread : threads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                Log.e(TAG, e.getMessage());
+            }
+        }
+    }
+
     private void sendDownloadRequest(TransferRequest transferRequest) {
         String json = gson.toJson(transferRequest);
         String message = CommandTypes.SEND_FILE + json;
         sendBroadcast(message);
+    }
+
+    private String generateText(String fileName, long fileSize) {
+        String fileSizeString = getFileSizeString(fileSize);
+        return fileName + "\n" + fileSizeString;
     }
 }

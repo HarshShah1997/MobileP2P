@@ -23,7 +23,7 @@ public class FileTransferUtils {
     private static final int FILE_TRANSFER_PORT = 6579;
     private static final String READ_MODE = "r";
     private static final String WRITE_MODE = "rw";
-    private static final int BUFFER_SIZE = 8192;
+    private static final int BUFFER_SIZE = 8192 * 256;
     private static final String DOWNLOAD_DIRECTORY = "/P2PDownload/";
     private static final String UPLOAD_DIRECTORY = "/Upload/";
     private static final String TAG = "FileTransferUtils";
@@ -57,9 +57,8 @@ public class FileTransferUtils {
         }
     }
 
-    public void receiveFile(TransferRequest transferRequest) throws IOException {
+    public void receiveFile(TransferRequest transferRequest, ServerSocket serverSocket) throws IOException {
         RandomAccessFile file = null;
-        ServerSocket serverSocket = null;
         Socket clientSocket = null;
         InputStream incomingStream = null;
 
@@ -68,7 +67,6 @@ public class FileTransferUtils {
             FileChannel fileChannel = file.getChannel();
             fileChannel.position(transferRequest.getStartOffset());
 
-            serverSocket = new ServerSocket(FILE_TRANSFER_PORT);
             clientSocket = serverSocket.accept();
             Log.d(TAG, "Client accepted");
 
@@ -88,7 +86,6 @@ public class FileTransferUtils {
             closeInputStream(incomingStream);
             closeFile(file);
             closeSocket(clientSocket);
-            closeServerSocket(serverSocket);
         }
     }
 

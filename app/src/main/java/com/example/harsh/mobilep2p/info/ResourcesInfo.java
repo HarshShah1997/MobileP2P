@@ -13,7 +13,6 @@ import java.util.List;
 public class ResourcesInfo {
 
     private List<String> hostAddresses = new ArrayList<>();
-
     private HashMap<String, SystemResources> resourcesMap = new HashMap<>();
 
     public List<String> getHostAddresses() {
@@ -37,6 +36,7 @@ public class ResourcesInfo {
     }
 
     public String findSmartHead() {
+        // TODO: Perform scaling with RAM
         String maxHostCharging = "";
         double maxWeightCharging = 0;
         String maxHostNotCharging = "";

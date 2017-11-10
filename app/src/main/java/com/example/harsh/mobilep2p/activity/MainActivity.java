@@ -34,6 +34,7 @@ import java.lang.reflect.Type;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
     private static final int PORT = 6578;
+    private static final int FILE_TRANSFER_PORT = 6579;
     private static final int BUFF_SIZE = 4096;
     private static final int TEXT_VIEW_SIZE = 16;
     private static final int BORDER_HEIGHT = 1;
@@ -235,7 +237,8 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 TableLayout tableLayout = (TableLayout) findViewById(R.id.filesListLayout);
                 tableLayout.removeAllViews();
-                for (FileMetadata file : fileListInfo.getFiles()) {
+                for (int i = 0; i < fileListInfo.getFiles().size(); i++) {
+                    FileMetadata file = fileListInfo.getFiles().get(i);
                     addTableRow(file.getFileName(), file.getFileSize());
                 }
             }
@@ -328,30 +331,36 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "Download requested: " + fileName + " Locations: " + nodes);
                 List<TransferRequest> transferRequests = generateTransferRequests(fileName, fileSize, nodes);
 
-                List<Thread> threads = new ArrayList<>();
-                //fileStatuses.put(generateText(fileName, fileSize), STATUS_SUCCESS);
-                for (final TransferRequest transferRequest : transferRequests) {
-                    Log.d(TAG, "FileName:" + transferRequest.getFileName() + " From:" + transferRequest.getFromIPAddress() +
-                            " To:" + transferRequest.getToIPAddress() + " Offset:" + transferRequest.getStartOffset() + " Size:" + transferRequest.getSize());
-                    Thread thread = new Thread(new Runnable() {
-                        public void run() {
-                            try {
-                                fileTransferUtils.receiveFile(transferRequest);
-                            } catch (IOException e) {
-                                fileStatuses.put(generateText(fileName, fileSize), STATUS_FAILED);
-                                Log.e(TAG, e.getMessage());
+                try {
+                    final ServerSocket serverSocket = new ServerSocket(FILE_TRANSFER_PORT);
+
+                    List<Thread> threads = new ArrayList<>();
+                    for (final TransferRequest transferRequest : transferRequests) {
+                        Log.d(TAG, "FileName:" + transferRequest.getFileName() + " From:" + transferRequest.getFromIPAddress() +
+                                " To:" + transferRequest.getToIPAddress() + " Offset:" + transferRequest.getStartOffset() + " Size:" + transferRequest.getSize());
+                        Thread thread = new Thread(new Runnable() {
+                            public void run() {
+                                try {
+                                    fileTransferUtils.receiveFile(transferRequest, serverSocket);
+                                } catch (IOException e) {
+                                    fileStatuses.put(generateText(fileName, fileSize), STATUS_FAILED);
+                                    Log.e(TAG, e.getMessage());
+                                }
                             }
-                        }
-                    });
-                    threads.add(thread);
-                    thread.start();
-                    sendDownloadRequest(transferRequest);
+                        });
+                        threads.add(thread);
+                        thread.start();
+                        sendDownloadRequest(transferRequest);
+                    }
+                    joinThreads(threads);
+                    if (fileStatuses.get(generateText(fileName, fileSize)).equals(STATUS_PROGRESS)) {
+                        fileStatuses.put(generateText(fileName, fileSize), STATUS_SUCCESS);
+                    }
+                    showStatus(fileName, fileSize);
+                    serverSocket.close();
+                } catch (IOException e) {
+                    Log.e(TAG, e.getMessage());
                 }
-                joinThreads(threads);
-                if (fileStatuses.get(generateText(fileName, fileSize)).equals(STATUS_PROGRESS)) {
-                    fileStatuses.put(generateText(fileName, fileSize), STATUS_SUCCESS);
-                }
-                showStatus(fileName, fileSize);
             }
         }).start();
     }
@@ -383,24 +392,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private List<TransferRequest> generateTransferRequests(String fileName, long fileSize, List<String> nodes) {
-        // TODO: Perform weighted division
         List<TransferRequest> transferRequests = new ArrayList<>();
         int noOfNodes = nodes.size();
-
-        long chunkSize = fileSize / noOfNodes;
         long startOffset = 0;
 
-        TransferRequest transferRequest = new TransferRequest();
-        transferRequest.setFileName(fileName);
-        transferRequest.setToIPAddress(deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress());
+        List<Double> weights = findWeights(nodes);
+        long chunkSize = 0;
+        Log.d(TAG, "Weights:" + weights + " Nodes:" + nodes);
         for (int i = 0; i < noOfNodes; i++) {
+            TransferRequest transferRequest = new TransferRequest();
+            transferRequest.setFileName(fileName);
+            transferRequest.setToIPAddress(deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress());
             transferRequest.setStartOffset(startOffset);
+            chunkSize = (long)(fileSize * weights.get(i));
             transferRequest.setSize(chunkSize);
             transferRequest.setFromIPAddress(nodes.get(i));
             transferRequests.add(transferRequest);
             startOffset += chunkSize;
         }
-        transferRequests.get(noOfNodes - 1).setSize(chunkSize + (fileSize % noOfNodes));
+        transferRequests.get(noOfNodes - 1).setSize(chunkSize + fileSize - startOffset);
         return transferRequests;
     }
 
@@ -429,5 +439,28 @@ public class MainActivity extends AppCompatActivity {
         if (socket != null) {
             socket.close();
         }
+    }
+
+    private List<Double> findWeights(List<String> nodes) {
+        List<Double> weights = new ArrayList<>();
+        double sum = 0;
+        for (String node : nodes) {
+            SystemResources systemResources = resourcesInfo.getResourcesMap().get(node);
+            double weight = 0.75 * getBatteryLevel(systemResources.getBatteryLevel()) + 0.25 * getRamLevel(systemResources.getAvailableMemory());
+            weights.add(weight);
+            sum += weight;
+        }
+        for (int i = 0; i < weights.size(); i++) {
+            weights.set(i, weights.get(i) / sum);
+        }
+        return weights;
+    }
+
+    private double getBatteryLevel(String batteryPercentage) {
+        return Double.parseDouble("0." + batteryPercentage);
+    }
+
+    private double getRamLevel(String availableMemory) {
+        return Double.parseDouble(availableMemory) / 4000;
     }
 }

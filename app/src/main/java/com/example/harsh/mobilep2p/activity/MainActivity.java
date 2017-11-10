@@ -3,16 +3,13 @@ package com.example.harsh.mobilep2p.activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
-import android.net.wifi.WifiManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
-import android.content.Context;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -59,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String smartHead = "";
     private List<FileMetadata> deviceFilesList = new ArrayList<>();
-    private String status = "";
+    private Map<String, String> fileStatuses = new HashMap<>();
     private Map<String, TableRow> tableRowMap = new HashMap<>();
 
     private Gson gson = new Gson();
@@ -86,13 +83,15 @@ public class MainActivity extends AppCompatActivity {
             socket = new DatagramSocket(PORT, InetAddress.getByName("0.0.0.0"));
             socket.setBroadcast(true);
             while (true) {
-                byte[] recvBuf = new byte[BUFF_SIZE];
-                DatagramPacket packet = new DatagramPacket(recvBuf, recvBuf.length);
+                byte[] receiveBuffer = new byte[BUFF_SIZE];
+                DatagramPacket packet = new DatagramPacket(receiveBuffer, receiveBuffer.length);
                 socket.receive(packet);
                 processIncomingPacket(packet);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e(TAG, e.getMessage());
+        } finally {
+            closeSocket(socket);
         }
     }
 
@@ -299,11 +298,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean isSmartHead() {
-        if (deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress().equals(smartHead)) {
-            return true;
-        } else {
-            return false;
-        }
+        return deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress().equals(smartHead);
     }
 
     private void getFilesFromDevice() {
@@ -317,43 +312,48 @@ public class MainActivity extends AppCompatActivity {
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        status = STATUS_PROGRESS;
-                        showStatus(fileName, fileSize);
                         startDownload(fileName, fileSize);
-                        showStatus(fileName, fileSize);
                     }
                 })
                 .setNegativeButton(android.R.string.no, null).show();
     }
 
-    private void startDownload(String fileName, long fileSize) {
-        List<String> nodes = fileListInfo.getNodesContainingFile(fileName, fileSize);
-        Log.d(TAG, "Download requested: " + fileName + " Locations: " + nodes);
-        List<TransferRequest> transferRequests = generateTransferRequests(fileName, fileSize, nodes);
+    private void startDownload(final String fileName, final long fileSize) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                fileStatuses.put(generateText(fileName, fileSize), STATUS_PROGRESS);
+                showStatus(fileName, fileSize);
+                List<String> nodes = fileListInfo.getNodesContainingFile(fileName, fileSize);
+                Log.d(TAG, "Download requested: " + fileName + " Locations: " + nodes);
+                List<TransferRequest> transferRequests = generateTransferRequests(fileName, fileSize, nodes);
 
-        List<Thread> threads = new ArrayList<>();
-        status = STATUS_SUCCESS;
-        for (final TransferRequest transferRequest : transferRequests) {
-            Log.d(TAG, "FileName:" + transferRequest.getFileName() +
-                    " From:" + transferRequest.getFromIPAddress() +
-                    " To:" + transferRequest.getToIPAddress() +
-                    " Offset:" + transferRequest.getStartOffset() +
-                    " Size:" + transferRequest.getSize());
-            Thread thread = new Thread(new Runnable() {
-                public void run() {
-                    try {
-                        fileTransferUtils.receiveFile(transferRequest);
-                    } catch (IOException e) {
-                        status = STATUS_FAILED;
-                        Log.e(TAG, e.getMessage());
-                    }
+                List<Thread> threads = new ArrayList<>();
+                //fileStatuses.put(generateText(fileName, fileSize), STATUS_SUCCESS);
+                for (final TransferRequest transferRequest : transferRequests) {
+                    Log.d(TAG, "FileName:" + transferRequest.getFileName() + " From:" + transferRequest.getFromIPAddress() +
+                            " To:" + transferRequest.getToIPAddress() + " Offset:" + transferRequest.getStartOffset() + " Size:" + transferRequest.getSize());
+                    Thread thread = new Thread(new Runnable() {
+                        public void run() {
+                            try {
+                                fileTransferUtils.receiveFile(transferRequest);
+                            } catch (IOException e) {
+                                fileStatuses.put(generateText(fileName, fileSize), STATUS_FAILED);
+                                Log.e(TAG, e.getMessage());
+                            }
+                        }
+                    });
+                    threads.add(thread);
+                    thread.start();
+                    sendDownloadRequest(transferRequest);
                 }
-            });
-            threads.add(thread);
-            thread.start();
-            sendDownloadRequest(transferRequest);
-        }
-        joinThreads(threads);
+                joinThreads(threads);
+                if (fileStatuses.get(generateText(fileName, fileSize)).equals(STATUS_PROGRESS)) {
+                    fileStatuses.put(generateText(fileName, fileSize), STATUS_SUCCESS);
+                }
+                showStatus(fileName, fileSize);
+            }
+        }).start();
     }
 
     private void showStatus(final String fileName, final long fileSize) {
@@ -361,6 +361,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 String text = generateText(fileName, fileSize);
+                String fileStatus = fileStatuses.get(text);
                 TableRow row = tableRowMap.get(text);
                 row.removeAllViews();
                 ImageView imageView = new ImageView(MainActivity.this);
@@ -368,12 +369,12 @@ public class MainActivity extends AppCompatActivity {
                 imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 row.addView(createTextView(text));
 
-                if (status.equals(STATUS_SUCCESS)) {
+                if (fileStatus.equals(STATUS_SUCCESS)) {
                     Log.d(TAG, "Download succeeded");
                     imageView.setImageResource(R.mipmap.download_success);
-                } else if (status.equals(STATUS_PROGRESS)) {
+                } else if (fileStatus.equals(STATUS_PROGRESS)) {
                     imageView.setImageResource(R.mipmap.download_progress);
-                } else if (status.equals(STATUS_FAILED)) {
+                } else if (fileStatus.equals(STATUS_FAILED)) {
                     imageView.setImageResource(R.mipmap.download_failed);
                 }
                 row.addView(imageView);
@@ -422,5 +423,11 @@ public class MainActivity extends AppCompatActivity {
     private String generateText(String fileName, long fileSize) {
         String fileSizeString = getFileSizeString(fileSize);
         return fileName + "\n" + fileSizeString;
+    }
+
+    private void closeSocket(DatagramSocket socket) {
+        if (socket != null) {
+            socket.close();
+        }
     }
 }

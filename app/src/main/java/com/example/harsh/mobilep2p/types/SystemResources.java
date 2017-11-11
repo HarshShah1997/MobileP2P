@@ -34,8 +34,10 @@ public class SystemResources implements Serializable {
     private String determineBatteryStatus(Context context) {
         IntentFilter iFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         Intent batteryStatus = context.registerReceiver(null, iFilter);
-
-        int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+        int status = -1;
+        if (batteryStatus != null) {
+            status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+        }
         return convertStatusToString(status);
     }
 
@@ -63,14 +65,12 @@ public class SystemResources implements Serializable {
 
     private String determineAvailableMemory(Context context) {
         MemoryInfo memoryInfo = getMemoryInfo(context);
-        String availableMemory = String.format("%s", memoryInfo.availMem / 0x100000L);
-        return availableMemory;
+        return String.format("%s", memoryInfo.availMem / 0x100000L);
     }
 
     private String determineTotalMemory(Context context) {
         MemoryInfo memoryInfo = getMemoryInfo(context);
-        String totalMemory = String.format("%s", memoryInfo.totalMem / 0x100000L);
-        return totalMemory;
+        return String.format("%s", memoryInfo.totalMem / 0x100000L);
     }
 
     private MemoryInfo getMemoryInfo(Context context) {

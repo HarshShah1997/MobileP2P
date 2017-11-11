@@ -16,7 +16,9 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.harsh.mobilep2p.info.FileStatusInfo;
 import com.example.harsh.mobilep2p.info.ResourcesInfo;
+import com.example.harsh.mobilep2p.types.FileDownloadStatus;
 import com.example.harsh.mobilep2p.types.TransferRequest;
 import com.example.harsh.mobilep2p.util.DeviceUtils;
 import com.example.harsh.mobilep2p.info.FileListInfo;
@@ -37,10 +39,8 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -52,20 +52,16 @@ public class MainActivity extends AppCompatActivity {
     private static final int BUFF_SIZE = 4096;
     private static final int TEXT_VIEW_SIZE = 16;
     private static final int BORDER_HEIGHT = 1;
-    private static final String STATUS_SUCCESS = "success";
-    private static final String STATUS_FAILED = "failed";
-    private static final String STATUS_PROGRESS = "progress";
 
     private String smartHead = "";
     private List<FileMetadata> deviceFilesList = new ArrayList<>();
-    private Map<String, String> fileStatuses = new HashMap<>();
-    private Map<String, TableRow> tableRowMap = new HashMap<>();
 
     private Gson gson = new Gson();
     private FileListInfo fileListInfo = new FileListInfo();
     private ResourcesInfo resourcesInfo = new ResourcesInfo();
     private DeviceUtils deviceUtils = new DeviceUtils();
     private FileTransferUtils fileTransferUtils = new FileTransferUtils();
+    private FileStatusInfo fileStatusInfo = new FileStatusInfo();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -252,7 +248,7 @@ public class MainActivity extends AppCompatActivity {
 
         String text = generateText(fileName, fileSize);
         row.addView(createTextView(text));
-        tableRowMap.put(text, row);
+        fileStatusInfo.setTableRow(fileName, fileSize, row);
 
         row.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -289,17 +285,6 @@ public class MainActivity extends AppCompatActivity {
         return textView;
     }
 
-    private String getFileSizeString(long fileSize) {
-        double size = fileSize;
-        List<String> fileSizeSuffixes = new ArrayList<>(Arrays.asList("bytes", "KB", "MB", "GB"));
-        int suffixPointer = 0;
-        while (size > 1024) {
-            suffixPointer++;
-            size = size / 1024;
-        }
-        return String.format(Locale.ENGLISH, "%.2f %s", size, fileSizeSuffixes.get(suffixPointer));
-    }
-
     private boolean isSmartHead() {
         return deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress().equals(smartHead);
     }
@@ -325,25 +310,22 @@ public class MainActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                fileStatuses.put(generateText(fileName, fileSize), STATUS_PROGRESS);
+                fileStatusInfo.setFileStatus(fileName, fileSize, FileDownloadStatus.PROGRESS);
                 showStatus(fileName, fileSize);
                 List<String> nodes = fileListInfo.getNodesContainingFile(fileName, fileSize);
-                Log.d(TAG, "Download requested: " + fileName + " Locations: " + nodes);
+                Log.d(TAG, "Download requested: " + fileName + " " + fileSize + " Locations: " + nodes);
                 List<TransferRequest> transferRequests = generateTransferRequests(fileName, fileSize, nodes);
-
                 try {
                     final ServerSocket serverSocket = new ServerSocket(FILE_TRANSFER_PORT);
 
                     List<Thread> threads = new ArrayList<>();
                     for (final TransferRequest transferRequest : transferRequests) {
-                        Log.d(TAG, "FileName:" + transferRequest.getFileName() + " From:" + transferRequest.getFromIPAddress() +
-                                " To:" + transferRequest.getToIPAddress() + " Offset:" + transferRequest.getStartOffset() + " Size:" + transferRequest.getSize());
                         Thread thread = new Thread(new Runnable() {
                             public void run() {
                                 try {
                                     fileTransferUtils.receiveFile(transferRequest, serverSocket);
                                 } catch (IOException e) {
-                                    fileStatuses.put(generateText(fileName, fileSize), STATUS_FAILED);
+                                    fileStatusInfo.setFileStatus(fileName, fileSize, FileDownloadStatus.FAILED);
                                     Log.e(TAG, e.getMessage());
                                 }
                             }
@@ -353,8 +335,8 @@ public class MainActivity extends AppCompatActivity {
                         sendDownloadRequest(transferRequest);
                     }
                     joinThreads(threads);
-                    if (fileStatuses.get(generateText(fileName, fileSize)).equals(STATUS_PROGRESS)) {
-                        fileStatuses.put(generateText(fileName, fileSize), STATUS_SUCCESS);
+                    if ((fileStatusInfo.getFileStatus(fileName, fileSize)).equals(FileDownloadStatus.PROGRESS)) {
+                        fileStatusInfo.setFileStatus(fileName, fileSize, FileDownloadStatus.SUCCESS);
                     }
                     showStatus(fileName, fileSize);
                     serverSocket.close();
@@ -369,21 +351,21 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                String text = generateText(fileName, fileSize);
-                String fileStatus = fileStatuses.get(text);
-                TableRow row = tableRowMap.get(text);
+
+                String fileStatus = fileStatusInfo.getFileStatus(fileName, fileSize);
+                TableRow row = fileStatusInfo.getTableRow(fileName, fileSize);
                 row.removeAllViews();
                 ImageView imageView = new ImageView(MainActivity.this);
                 imageView.setLayoutParams(new TableRow.LayoutParams(60, 60));
                 imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                row.addView(createTextView(text));
+                row.addView(createTextView(generateText(fileName, fileSize)));
 
-                if (fileStatus.equals(STATUS_SUCCESS)) {
+                if (fileStatus.equals(FileDownloadStatus.SUCCESS)) {
                     Log.d(TAG, "Download succeeded");
                     imageView.setImageResource(R.mipmap.download_success);
-                } else if (fileStatus.equals(STATUS_PROGRESS)) {
+                } else if (fileStatus.equals(FileDownloadStatus.PROGRESS)) {
                     imageView.setImageResource(R.mipmap.download_progress);
-                } else if (fileStatus.equals(STATUS_FAILED)) {
+                } else if (fileStatus.equals(FileDownloadStatus.FAILED)) {
                     imageView.setImageResource(R.mipmap.download_failed);
                 }
                 row.addView(imageView);
@@ -396,14 +378,15 @@ public class MainActivity extends AppCompatActivity {
         int noOfNodes = nodes.size();
         long startOffset = 0;
 
-        List<Double> weights = findWeights(nodes);
+        List<Double> weights = resourcesInfo.findWeights(nodes);
         long chunkSize = 0;
-        Log.d(TAG, "Weights:" + weights + " Nodes:" + nodes);
+        Log.d(TAG, "Weights:" + weights);
         for (int i = 0; i < noOfNodes; i++) {
             TransferRequest transferRequest = new TransferRequest();
             transferRequest.setFileName(fileName);
             transferRequest.setToIPAddress(deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress());
             transferRequest.setStartOffset(startOffset);
+
             chunkSize = (long)(fileSize * weights.get(i));
             transferRequest.setSize(chunkSize);
             transferRequest.setFromIPAddress(nodes.get(i));
@@ -435,32 +418,20 @@ public class MainActivity extends AppCompatActivity {
         return fileName + "\n" + fileSizeString;
     }
 
+    private String getFileSizeString(long fileSize) {
+        double size = fileSize;
+        List<String> fileSizeSuffixes = new ArrayList<>(Arrays.asList("bytes", "KB", "MB", "GB", "TB"));
+        int suffixPointer = 0;
+        while (size > 1024) {
+            suffixPointer++;
+            size = size / 1024;
+        }
+        return String.format(Locale.ENGLISH, "%.2f %s", size, fileSizeSuffixes.get(suffixPointer));
+    }
+
     private void closeSocket(DatagramSocket socket) {
         if (socket != null) {
             socket.close();
         }
-    }
-
-    private List<Double> findWeights(List<String> nodes) {
-        List<Double> weights = new ArrayList<>();
-        double sum = 0;
-        for (String node : nodes) {
-            SystemResources systemResources = resourcesInfo.getResourcesMap().get(node);
-            double weight = 0.75 * getBatteryLevel(systemResources.getBatteryLevel()) + 0.25 * getRamLevel(systemResources.getAvailableMemory());
-            weights.add(weight);
-            sum += weight;
-        }
-        for (int i = 0; i < weights.size(); i++) {
-            weights.set(i, weights.get(i) / sum);
-        }
-        return weights;
-    }
-
-    private double getBatteryLevel(String batteryPercentage) {
-        return Double.parseDouble("0." + batteryPercentage);
-    }
-
-    private double getRamLevel(String availableMemory) {
-        return Double.parseDouble(availableMemory) / 4000;
     }
 }

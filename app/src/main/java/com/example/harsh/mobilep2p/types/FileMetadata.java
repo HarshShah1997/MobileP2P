@@ -13,7 +13,6 @@ public class FileMetadata implements Serializable {
     private long fileSize;
 
     public void setFileName(String fileName) {
-
         this.fileName = fileName;
     }
 
@@ -33,18 +32,21 @@ public class FileMetadata implements Serializable {
     }
 
     @Override
-    public boolean equals(Object second) {
-        FileMetadata otherFile = (FileMetadata) second;
-        if (this.getFileName().equals(otherFile.getFileName()) && this.getFileSize() == otherFile.getFileSize()) {
-            return true;
-        } else {
-            return false;
-        }
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        FileMetadata that = (FileMetadata) o;
+
+        return (fileName.equals(that.fileName)) && (fileSize == that.fileSize);
+
     }
 
     @Override
     public int hashCode() {
-        return fileName.hashCode();
+        int result = fileName.hashCode();
+        result = 31 * result + (int) (fileSize ^ (fileSize >>> 32));
+        return result;
     }
 
     @Override

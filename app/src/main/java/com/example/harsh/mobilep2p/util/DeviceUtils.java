@@ -4,9 +4,7 @@ import android.content.Context;
 import android.net.DhcpInfo;
 import android.net.wifi.WifiManager;
 import android.os.Environment;
-import android.util.Log;
 
-import com.example.harsh.mobilep2p.activity.MainActivity;
 import com.example.harsh.mobilep2p.types.FileMetadata;
 
 import java.io.File;
@@ -16,7 +14,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**

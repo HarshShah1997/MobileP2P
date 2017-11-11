@@ -17,11 +17,10 @@ import java.util.Map;
 
 public class DevicesListActivity extends AppCompatActivity {
 
-    private static final int TEXTVIEW_SIZE = 8;
+    private static final int TEXTVIEW_SIZE = 10;
 
     private Map<String, TableRow> tableRowMap = new HashMap<>();
     private String smartHead = "";
-    private HashMap<String, SystemResources> resourcesMap = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,7 +29,7 @@ public class DevicesListActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         smartHead = intent.getStringExtra(IntentConstants.SMART_HEAD);
-        resourcesMap = (HashMap<String, SystemResources>) intent.getSerializableExtra(IntentConstants.RESOURCES_MAP);
+        HashMap<String, SystemResources> resourcesMap = (HashMap<String, SystemResources>) intent.getSerializableExtra(IntentConstants.RESOURCES_MAP);
 
         for (Map.Entry<String, SystemResources> entry : resourcesMap.entrySet()) {
             addResourcesToTable(entry.getKey(), entry.getValue());

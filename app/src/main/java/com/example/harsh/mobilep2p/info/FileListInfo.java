@@ -12,7 +12,7 @@ import java.util.*;
 
 public class FileListInfo implements Serializable {
 
-    private List<FileMetadata> files = new ArrayList<FileMetadata>();
+    private List<FileMetadata> files = new ArrayList<>();
 
     private Map<String, List<FileMetadata>> nodesContent = new HashMap<>();
 
@@ -36,7 +36,7 @@ public class FileListInfo implements Serializable {
         }
     }
 
-    public void addFileInfo(FileMetadata receivedFile, String node) {
+    private void addFileInfo(FileMetadata receivedFile, String node) {
         for (FileMetadata f : files) {
             if (f.getFileName().equals(receivedFile.getFileName()) && f.getFileSize() == receivedFile.getFileSize()) {
                 addFileLocations(receivedFile, node);
@@ -50,7 +50,7 @@ public class FileListInfo implements Serializable {
         addNodesContent(receivedFile,node);
     }
 
-    public void addFileLocations(FileMetadata receivedFile, String node){
+    private void addFileLocations(FileMetadata receivedFile, String node){
         if(fileLocations.containsKey(receivedFile)) {
             if (!fileLocations.get(receivedFile).contains(node)) {
                 fileLocations.get(receivedFile).add(node);
@@ -62,7 +62,7 @@ public class FileListInfo implements Serializable {
         }
     }
 
-    public void addNodesContent(FileMetadata receivedFile, String node){
+    private void addNodesContent(FileMetadata receivedFile, String node){
         if(nodesContent.containsKey(node) && !nodesContent.get(node).contains(receivedFile)){
             nodesContent.get(node).add(receivedFile);
         } else {
@@ -72,7 +72,7 @@ public class FileListInfo implements Serializable {
         }
     }
 
-    public FileMetadata getFile(String fileName, long fileSize){
+    private FileMetadata getFile(String fileName, long fileSize){
         for (FileMetadata f : files){
             if (f.getFileName().equals(fileName) && f.getFileSize() == fileSize) {
                 return f;

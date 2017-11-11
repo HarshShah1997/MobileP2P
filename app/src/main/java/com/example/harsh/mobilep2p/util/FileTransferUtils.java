@@ -120,10 +120,4 @@ public class FileTransferUtils {
             socket.close();
         }
     }
-
-    private void closeServerSocket(ServerSocket serverSocket) throws IOException {
-        if (serverSocket != null) {
-            serverSocket.close();
-        }
-    }
 }

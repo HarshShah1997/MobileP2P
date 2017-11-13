@@ -101,8 +101,6 @@ public class DeviceUtils {
         return found_bcast_address;
     }
 
-
-
     public List<FileMetadata> getFilesFromDevice() {
         List<FileMetadata> filesList = new ArrayList<>();
         File directory = new File(Environment.getExternalStorageDirectory(), UPLOAD_DIRECTORY);

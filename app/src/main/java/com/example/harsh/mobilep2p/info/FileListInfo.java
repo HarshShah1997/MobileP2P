@@ -91,13 +91,15 @@ public class FileListInfo implements Serializable {
         }
     }
 
-    public List<FileMetadata> getListOfFiles() {
-        return files;
-    }
-
-    public void clear() {
-        files = new ArrayList<>();
-        nodesContent = new HashMap<>();
-        fileLocations = new HashMap<>();
+    public void removeNode(String node) {
+        List<FileMetadata> filesListOfNode = nodesContent.get(node);
+        nodesContent.remove(node);
+        for (FileMetadata file : filesListOfNode) {
+            fileLocations.get(file).remove(node);
+            if (fileLocations.get(file).isEmpty()) {
+                fileLocations.remove(file);
+                files.remove(file);
+            }
+        }
     }
 }

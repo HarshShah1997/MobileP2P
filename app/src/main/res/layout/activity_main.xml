@@ -7,21 +7,35 @@
     tools:context="com.example.harsh.mobilep2p.activity.MainActivity">
 
     <TableLayout
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:shrinkColumns="0"
         android:layout_margin="8dp"
-        android:id="@+id/filesListLayout">
+        android:id="@+id/filesListLayout"
+        tools:layout_editor_absoluteY="0dp"
+        tools:layout_editor_absoluteX="8dp">
     </TableLayout>
 
     <Button
         android:id="@+id/listDevicesButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
+        android:layout_width="143dp"
+        android:layout_height="59dp"
+        android:layout_marginBottom="16dp"
         android:onClick="showDevices"
         android:text="Show Devices"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent" />
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintHorizontal_bias="0.153"
+        tools:layout_editor_absoluteY="436dp" />
+
+    <ImageButton
+        android:id="@+id/imageButton"
+        android:layout_width="64dp"
+        android:layout_height="57dp"
+        android:layout_marginLeft="54dp"
+        app:layout_constraintLeft_toRightOf="@+id/listDevicesButton"
+        app:srcCompat="@mipmap/refresh_icon"
+        tools:layout_editor_absoluteY="436dp"
+        android:onClick="refreshFilesList"/>
 </android.support.constraint.ConstraintLayout>

@@ -35,8 +35,10 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -52,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int BUFF_SIZE = 4096;
     private static final int TEXT_VIEW_SIZE = 16;
     private static final int BORDER_HEIGHT = 1;
+    private static final int TIMEOUT = 500;
 
     private String smartHead = "";
     private List<FileMetadata> deviceFilesList = new ArrayList<>();
@@ -433,5 +436,26 @@ public class MainActivity extends AppCompatActivity {
         if (socket != null) {
             socket.close();
         }
+    }
+
+    public void refreshFilesList(View view) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    for (int i = 0; i < resourcesInfo.getHostAddresses().size(); i++) {
+                        String hostName = resourcesInfo.getHostAddresses().get(i);
+                        InetAddress nodeAddress = InetAddress.getByName(hostName);
+                        if (!nodeAddress.isReachable(TIMEOUT)) {
+                            fileListInfo.removeNode(hostName);
+                            resourcesInfo.getHostAddresses().remove(hostName);
+                        }
+                    }
+                    refreshFilesListUI();
+                } catch (IOException e) {
+                    Log.e(TAG, e.getMessage());
+                }
+            }
+        }).start();
     }
 }

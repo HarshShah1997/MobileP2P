@@ -47,7 +47,7 @@ import java.util.TimerTask;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private static final int PORT = 6578;
+    private static final int BROADCAST_PORT = 6578;
     private static final int FILE_TRANSFER_PORT = 6579;
     private static final int BUFF_SIZE = 4096;
     private static final int TEXT_VIEW_SIZE = 16;
@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
     private void receiveBroadcast() {
         DatagramSocket socket = null;
         try {
-            socket = new DatagramSocket(PORT, InetAddress.getByName("0.0.0.0"));
+            socket = new DatagramSocket(BROADCAST_PORT, InetAddress.getByName("0.0.0.0"));
             socket.setBroadcast(true);
             while (true) {
                 byte[] receiveBuffer = new byte[BUFF_SIZE];
@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
                     DatagramSocket socket = new DatagramSocket();
                     socket.setBroadcast(true);
                     byte[] sendData = message.getBytes();
-                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, deviceUtils.getBroadcastAddress(MainActivity.this), PORT);
+                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, deviceUtils.getBroadcastAddress(MainActivity.this), BROADCAST_PORT);
                     socket.send(sendPacket);
                 } catch (IOException e) {
                     e.printStackTrace();

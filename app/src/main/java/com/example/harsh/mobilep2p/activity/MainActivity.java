@@ -70,7 +70,15 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+    }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        init();
+    }
+
+    private void init() {
         deviceUtils.acquireMultiCastLock(MainActivity.this);
         startReceiveBroadcast();
         getFilesFromDevice();
@@ -148,6 +156,8 @@ public class MainActivity extends AppCompatActivity {
             updateFilesList(data.substring(CommandTypes.FILES_LIST.length()), hostAddress);
         } else if (data.startsWith(CommandTypes.SEND_FILE)) {
             sendFile(data.substring(CommandTypes.SEND_FILE.length()));
+        } else if (data.startsWith(CommandTypes.QUIT)) {
+            removeNode(hostAddress);
         }
     }
 
@@ -228,6 +238,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             }).start();
         }
+    }
+
+    private void removeNode(String node) {
+        resourcesInfo.removeHostAddress(node);
+        fileListInfo.removeNode(node);
+        refreshFilesListUI();
     }
 
     private void refreshFilesListUI() {
@@ -327,7 +343,7 @@ public class MainActivity extends AppCompatActivity {
                             public void run() {
                                 try {
                                     fileTransferUtils.receiveFile(transferRequest, serverSocket);
-                                } catch (IOException e) {
+                                } catch (IOException | ArrayIndexOutOfBoundsException e) {
                                     fileStatusInfo.setFileStatus(fileName, fileSize, FileDownloadStatus.FAILED);
                                     Log.e(TAG, e.getMessage());
                                 }
@@ -438,24 +454,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void refreshFilesList(View view) {
+    @Override
+    protected void onStop() {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                try {
-                    for (int i = 0; i < resourcesInfo.getHostAddresses().size(); i++) {
-                        String hostName = resourcesInfo.getHostAddresses().get(i);
-                        InetAddress nodeAddress = InetAddress.getByName(hostName);
-                        if (!nodeAddress.isReachable(TIMEOUT)) {
-                            fileListInfo.removeNode(hostName);
-                            resourcesInfo.getHostAddresses().remove(hostName);
-                        }
-                    }
-                    refreshFilesListUI();
-                } catch (IOException e) {
-                    Log.e(TAG, e.getMessage());
-                }
+                sendBroadcast(CommandTypes.QUIT);
             }
         }).start();
+        super.onStop();
     }
 }

@@ -15,4 +15,6 @@ public class CommandTypes {
     public static final String FILES_LIST = "fileslist";
 
     public static final String SEND_FILE = "sendfile";
+
+    public static final String QUIT = "quit";
 }

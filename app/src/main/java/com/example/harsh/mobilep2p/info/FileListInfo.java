@@ -93,6 +93,9 @@ public class FileListInfo implements Serializable {
 
     public void removeNode(String node) {
         List<FileMetadata> filesListOfNode = nodesContent.get(node);
+        if (filesListOfNode == null) {
+            return;
+        }
         nodesContent.remove(node);
         for (FileMetadata file : filesListOfNode) {
             fileLocations.get(file).remove(node);

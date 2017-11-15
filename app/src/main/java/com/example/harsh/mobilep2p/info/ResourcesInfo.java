@@ -35,6 +35,11 @@ public class ResourcesInfo {
 
     }
 
+    public void removeHostAddress(String hostAddress) {
+        hostAddresses.remove(hostAddress);
+        resourcesMap.remove(hostAddress);
+    }
+
     public void addResources(String hostAddress, SystemResources resources) {
         resourcesMap.put(hostAddress, resources);
     }

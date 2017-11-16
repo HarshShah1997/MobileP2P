@@ -54,7 +54,6 @@ public class MainActivity extends AppCompatActivity {
     private static final int BUFF_SIZE = 4096;
     private static final int TEXT_VIEW_SIZE = 16;
     private static final int BORDER_HEIGHT = 1;
-    private static final int TIMEOUT = 500;
 
     private String smartHead = "";
     private List<FileMetadata> deviceFilesList = new ArrayList<>();
@@ -376,7 +375,7 @@ public class MainActivity extends AppCompatActivity {
                 row.removeAllViews();
                 ImageView imageView = new ImageView(MainActivity.this);
                 imageView.setLayoutParams(new TableRow.LayoutParams(60, 60));
-                imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                //imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 row.addView(createTextView(generateText(fileName, fileSize)));
 
                 if (fileStatus.equals(FileDownloadStatus.SUCCESS)) {

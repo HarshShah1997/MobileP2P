@@ -11,6 +11,7 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -35,10 +36,8 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.ServerSocket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -249,24 +248,23 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                TableLayout tableLayout = (TableLayout) findViewById(R.id.filesListLayout);
-                tableLayout.removeAllViews();
+                LinearLayout linearLayout = (LinearLayout) findViewById(R.id.filesListLayout);
+                linearLayout.removeAllViews();
                 for (int i = 0; i < fileListInfo.getFiles().size(); i++) {
                     FileMetadata file = fileListInfo.getFiles().get(i);
-                    addTableRow(file.getFileName(), file.getFileSize());
+                    addRow(file.getFileName(), file.getFileSize(), linearLayout);
                 }
             }
         });
     }
 
-    private void addTableRow(final String fileName, final long fileSize) {
-        TableLayout tableLayout = (TableLayout) findViewById(R.id.filesListLayout);
-        TableRow row = new TableRow(MainActivity.this);
-        row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
+    private void addRow(final String fileName, final long fileSize, LinearLayout parent) {
+        LinearLayout row = new LinearLayout(this);
+        row.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         String text = generateText(fileName, fileSize);
         row.addView(createTextView(text));
-        fileStatusInfo.setTableRow(fileName, fileSize, row);
+        fileStatusInfo.setFileRow(fileName, fileSize, row);
 
         row.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -275,10 +273,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        TableRow emptyRow = createEmptyRow();
-
-        tableLayout.addView(row);
-        tableLayout.addView(emptyRow);
+        parent.addView(row);
+        parent.addView(createEmptyRow());
     }
 
     private TextView createTextView(String text) {
@@ -286,12 +282,13 @@ public class MainActivity extends AppCompatActivity {
         textView.setText(text);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, TEXT_VIEW_SIZE);
         textView.setTextColor(Color.GRAY);
+        textView.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 0.9f));
         return textView;
     }
 
-    private TableRow createEmptyRow() {
-        TableRow emptyRow = new TableRow(MainActivity.this);
-        emptyRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, BORDER_HEIGHT));
+    private LinearLayout createEmptyRow() {
+        LinearLayout emptyRow = new LinearLayout(MainActivity.this);
+        emptyRow.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, BORDER_HEIGHT));
         emptyRow.setBackgroundColor(Color.BLACK);
         emptyRow.addView(createEmptyLine());
         return emptyRow;
@@ -371,11 +368,10 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
 
                 String fileStatus = fileStatusInfo.getFileStatus(fileName, fileSize);
-                TableRow row = fileStatusInfo.getTableRow(fileName, fileSize);
+                LinearLayout row = fileStatusInfo.getFileRow(fileName, fileSize);
                 row.removeAllViews();
                 ImageView imageView = new ImageView(MainActivity.this);
-                imageView.setLayoutParams(new TableRow.LayoutParams(60, 60));
-                //imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 row.addView(createTextView(generateText(fileName, fileSize)));
 
                 if (fileStatus.equals(FileDownloadStatus.SUCCESS)) {

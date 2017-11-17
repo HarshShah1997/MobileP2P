@@ -84,6 +84,14 @@ public class MainActivity extends AppCompatActivity {
         startElection();
     }
 
+    private void startReceiveBroadcast() {
+        new Thread(new Runnable() {
+            public void run() {
+                receiveBroadcast();
+            }
+        }).start();
+    }
+
     private void receiveBroadcast() {
         DatagramSocket socket = null;
         try {
@@ -100,6 +108,20 @@ public class MainActivity extends AppCompatActivity {
         } finally {
             closeSocket(socket);
         }
+    }
+
+    private void announcePresence() {
+        sendBroadcast(CommandTypes.NEW);
+    }
+
+    private void startElection() {
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                String newSmartHead = resourcesInfo.findSmartHead();
+                sendBroadcast(CommandTypes.NEW_SMART_HEAD + newSmartHead);
+            }
+        }, 5000);
     }
 
     private void sendBroadcast(final String message) {
@@ -127,18 +149,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void announcePresence() {
-        sendBroadcast(CommandTypes.NEW);
-    }
-
-    private void startReceiveBroadcast() {
-        new Thread(new Runnable() {
-            public void run() {
-                receiveBroadcast();
-            }
-        }).start();
-    }
-
     private void processIncomingPacket(DatagramPacket packet) {
         String data = new String(packet.getData()).trim();
         String hostAddress = packet.getAddress().getHostAddress();
@@ -159,35 +169,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void sendPresence() {
-        String message = CommandTypes.PRESENT;
-        SystemResources resources = new SystemResources(MainActivity.this);
-        String json = gson.toJson(resources);
-        message += json;
-        sendBroadcast(message);
-    }
-
-    private void startElection() {
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                String newSmartHead = resourcesInfo.findSmartHead();
-                sendBroadcast(CommandTypes.NEW_SMART_HEAD + newSmartHead);
-            }
-        }, 5000);
-    }
-
-    private void updateSmartHead(String newSmartHead) {
-        smartHead = newSmartHead;
-    }
-
-    public void showDevices(View view) {
-        Intent intent = new Intent(this, DevicesListActivity.class);
-        intent.putExtra(IntentConstants.RESOURCES_MAP, resourcesInfo.getResourcesMap());
-        intent.putExtra(IntentConstants.SMART_HEAD, smartHead);
-        startActivity(intent);
-    }
-
     private void handleNewDevice(String hostAddress) {
         resourcesInfo.addHostAddress(hostAddress);
         sendPresence();
@@ -197,17 +178,29 @@ public class MainActivity extends AppCompatActivity {
         sendFilesList(deviceFilesList);
     }
 
+    // Broadcasts own files list
+    private void sendFilesList(List<FileMetadata> filesList) {
+        String json = gson.toJson(filesList);
+        String message = CommandTypes.FILES_LIST + json;
+        sendBroadcast(message);
+    }
+
+    private void sendPresence() {
+        String message = CommandTypes.PRESENT;
+        SystemResources resources = new SystemResources(MainActivity.this);
+        String json = gson.toJson(resources);
+        message += json;
+        sendBroadcast(message);
+    }
+
     private void handlePresentCommand(String json, String hostAddress) {
         resourcesInfo.addHostAddress(hostAddress);
         SystemResources resources = gson.fromJson(json, SystemResources.class);
         resourcesInfo.addResources(hostAddress, resources);
     }
 
-    // Broadcasts own files list
-    private void sendFilesList(List<FileMetadata> filesList) {
-        String json = gson.toJson(filesList);
-        String message = CommandTypes.FILES_LIST + json;
-        sendBroadcast(message);
+    private void updateSmartHead(String newSmartHead) {
+        smartHead = newSmartHead;
     }
 
     private void updateFilesList(String json, String hostAddress) {
@@ -217,6 +210,20 @@ public class MainActivity extends AppCompatActivity {
         fileListInfo.addFilesList(receivedFilesList, hostAddress);
         Log.d(TAG, "Files in the network: " + fileListInfo.getFiles());
         refreshFilesListUI();
+    }
+
+    private void refreshFilesListUI() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                LinearLayout linearLayout = (LinearLayout) findViewById(R.id.filesListLayout);
+                linearLayout.removeAllViews();
+                for (int i = 0; i < fileListInfo.getFiles().size(); i++) {
+                    FileMetadata file = fileListInfo.getFiles().get(i);
+                    addRow(file.getFileName(), file.getFileSize(), linearLayout);
+                }
+            }
+        });
     }
 
     private void sendFile(String json) {
@@ -244,18 +251,11 @@ public class MainActivity extends AppCompatActivity {
         refreshFilesListUI();
     }
 
-    private void refreshFilesListUI() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                LinearLayout linearLayout = (LinearLayout) findViewById(R.id.filesListLayout);
-                linearLayout.removeAllViews();
-                for (int i = 0; i < fileListInfo.getFiles().size(); i++) {
-                    FileMetadata file = fileListInfo.getFiles().get(i);
-                    addRow(file.getFileName(), file.getFileSize(), linearLayout);
-                }
-            }
-        });
+    public void showDevices(View view) {
+        Intent intent = new Intent(this, DevicesListActivity.class);
+        intent.putExtra(IntentConstants.RESOURCES_MAP, resourcesInfo.getResourcesMap());
+        intent.putExtra(IntentConstants.SMART_HEAD, smartHead);
+        startActivity(intent);
     }
 
     private void addRow(final String fileName, final long fileSize, LinearLayout parent) {
@@ -362,6 +362,30 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
+    private List<TransferRequest> generateTransferRequests(String fileName, long fileSize, List<String> nodes) {
+        List<TransferRequest> transferRequests = new ArrayList<>();
+        int noOfNodes = nodes.size();
+        long startOffset = 0;
+
+        List<Double> weights = resourcesInfo.findWeights(nodes);
+        long chunkSize = 0;
+        Log.d(TAG, "Weights:" + weights);
+        for (int i = 0; i < noOfNodes; i++) {
+            TransferRequest transferRequest = new TransferRequest();
+            transferRequest.setFileName(fileName);
+            transferRequest.setToIPAddress(deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress());
+            transferRequest.setStartOffset(startOffset);
+
+            chunkSize = (long)(fileSize * weights.get(i));
+            transferRequest.setSize(chunkSize);
+            transferRequest.setFromIPAddress(nodes.get(i));
+            transferRequests.add(transferRequest);
+            startOffset += chunkSize;
+        }
+        transferRequests.get(noOfNodes - 1).setSize(chunkSize + fileSize - startOffset);
+        return transferRequests;
+    }
+
     private void showStatus(final String fileName, final long fileSize) {
         runOnUiThread(new Runnable() {
             @Override
@@ -387,28 +411,10 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private List<TransferRequest> generateTransferRequests(String fileName, long fileSize, List<String> nodes) {
-        List<TransferRequest> transferRequests = new ArrayList<>();
-        int noOfNodes = nodes.size();
-        long startOffset = 0;
-
-        List<Double> weights = resourcesInfo.findWeights(nodes);
-        long chunkSize = 0;
-        Log.d(TAG, "Weights:" + weights);
-        for (int i = 0; i < noOfNodes; i++) {
-            TransferRequest transferRequest = new TransferRequest();
-            transferRequest.setFileName(fileName);
-            transferRequest.setToIPAddress(deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress());
-            transferRequest.setStartOffset(startOffset);
-
-            chunkSize = (long)(fileSize * weights.get(i));
-            transferRequest.setSize(chunkSize);
-            transferRequest.setFromIPAddress(nodes.get(i));
-            transferRequests.add(transferRequest);
-            startOffset += chunkSize;
-        }
-        transferRequests.get(noOfNodes - 1).setSize(chunkSize + fileSize - startOffset);
-        return transferRequests;
+    private void sendDownloadRequest(TransferRequest transferRequest) {
+        String json = gson.toJson(transferRequest);
+        String message = CommandTypes.SEND_FILE + json;
+        sendBroadcast(message);
     }
 
     private void joinThreads(List<Thread> threads) {
@@ -419,12 +425,6 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, e.getMessage());
             }
         }
-    }
-
-    private void sendDownloadRequest(TransferRequest transferRequest) {
-        String json = gson.toJson(transferRequest);
-        String message = CommandTypes.SEND_FILE + json;
-        sendBroadcast(message);
     }
 
     private String generateText(String fileName, long fileSize) {

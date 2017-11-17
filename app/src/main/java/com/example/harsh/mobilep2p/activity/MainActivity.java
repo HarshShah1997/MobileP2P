@@ -12,11 +12,11 @@ import android.util.TypedValue;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.harsh.mobilep2p.TabActivity;
 import com.example.harsh.mobilep2p.info.FileStatusInfo;
 import com.example.harsh.mobilep2p.info.ResourcesInfo;
 import com.example.harsh.mobilep2p.types.FileDownloadStatus;
@@ -220,7 +220,7 @@ public class MainActivity extends AppCompatActivity {
                 linearLayout.removeAllViews();
                 for (int i = 0; i < fileListInfo.getFiles().size(); i++) {
                     FileMetadata file = fileListInfo.getFiles().get(i);
-                    addRow(file.getFileName(), file.getFileSize(), linearLayout);
+                    addRow(file, linearLayout);
                 }
             }
         });
@@ -258,18 +258,18 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    private void addRow(final String fileName, final long fileSize, LinearLayout parent) {
+    private void addRow(final FileMetadata file, LinearLayout parent) {
         LinearLayout row = new LinearLayout(this);
         row.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
-        String text = generateText(fileName, fileSize);
+        String text = generateText(file.getFileName(), file.getFileSize());
         row.addView(createTextView(text));
-        fileStatusInfo.setFileRow(fileName, fileSize, row);
+        fileStatusInfo.setFileRow(file, row);
 
         row.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                downloadFile(fileName, fileSize);
+                downloadFile(file);
             }
         });
 
@@ -309,28 +309,31 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Device files: " + deviceFilesList);
     }
 
-    private void downloadFile(final String fileName, final long fileSize) {
+    private void downloadFile(final FileMetadata file) {
         new AlertDialog.Builder(this)
                 .setMessage("Confirm download?")
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        startDownload(fileName, fileSize);
+                        startDownload(file);
                     }
                 })
                 .setNegativeButton(android.R.string.no, null).show();
     }
 
-    private void startDownload(final String fileName, final long fileSize) {
+    private void startDownload(final FileMetadata file) {
+        final String fileName = file.getFileName();
+        final long fileSize = file.getFileSize();
+        fileStatusInfo.setFileStatus(file, FileDownloadStatus.PROGRESS);
+        showStatus(file, fileStatusInfo.getFileStatus(file));
         new Thread(new Runnable() {
             @Override
             public void run() {
-                fileStatusInfo.setFileStatus(fileName, fileSize, FileDownloadStatus.PROGRESS);
-                showStatus(fileName, fileSize);
                 List<String> nodes = fileListInfo.getNodesContainingFile(fileName, fileSize);
                 Log.d(TAG, "Download requested: " + fileName + " " + fileSize + " Locations: " + nodes);
                 List<TransferRequest> transferRequests = generateTransferRequests(fileName, fileSize, nodes);
                 try {
+
                     final ServerSocket serverSocket = new ServerSocket(FILE_TRANSFER_PORT);
 
                     List<Thread> threads = new ArrayList<>();
@@ -340,7 +343,7 @@ public class MainActivity extends AppCompatActivity {
                                 try {
                                     fileTransferUtils.receiveFile(transferRequest, serverSocket);
                                 } catch (IOException | ArrayIndexOutOfBoundsException e) {
-                                    fileStatusInfo.setFileStatus(fileName, fileSize, FileDownloadStatus.FAILED);
+                                    fileStatusInfo.setFileStatus(file, FileDownloadStatus.FAILED);
                                     Log.e(TAG, e.getMessage());
                                 }
                             }
@@ -350,10 +353,10 @@ public class MainActivity extends AppCompatActivity {
                         sendDownloadRequest(transferRequest);
                     }
                     joinThreads(threads);
-                    if ((fileStatusInfo.getFileStatus(fileName, fileSize)).equals(FileDownloadStatus.PROGRESS)) {
-                        fileStatusInfo.setFileStatus(fileName, fileSize, FileDownloadStatus.SUCCESS);
+                    if ((fileStatusInfo.getFileStatus(file)).equals(FileDownloadStatus.PROGRESS)) {
+                        fileStatusInfo.setFileStatus(file, FileDownloadStatus.SUCCESS);
                     }
-                    showStatus(fileName, fileSize);
+                    showStatus(file, fileStatusInfo.getFileStatus(file));
                     serverSocket.close();
                 } catch (IOException e) {
                     Log.e(TAG, e.getMessage());
@@ -376,7 +379,7 @@ public class MainActivity extends AppCompatActivity {
             transferRequest.setToIPAddress(deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress());
             transferRequest.setStartOffset(startOffset);
 
-            chunkSize = (long)(fileSize * weights.get(i));
+            chunkSize = (long) (fileSize * weights.get(i));
             transferRequest.setSize(chunkSize);
             transferRequest.setFromIPAddress(nodes.get(i));
             transferRequests.add(transferRequest);
@@ -386,17 +389,15 @@ public class MainActivity extends AppCompatActivity {
         return transferRequests;
     }
 
-    private void showStatus(final String fileName, final long fileSize) {
+    private void showStatus(final FileMetadata file, final String fileStatus) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-
-                String fileStatus = fileStatusInfo.getFileStatus(fileName, fileSize);
-                LinearLayout row = fileStatusInfo.getFileRow(fileName, fileSize);
+                LinearLayout row = fileStatusInfo.getFileRow(file);
                 row.removeAllViews();
                 ImageView imageView = new ImageView(MainActivity.this);
                 imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                row.addView(createTextView(generateText(fileName, fileSize)));
+                row.addView(createTextView(generateText(file.getFileName(), file.getFileSize())));
 
                 if (fileStatus.equals(FileDownloadStatus.SUCCESS)) {
                     Log.d(TAG, "Download succeeded");
@@ -409,6 +410,7 @@ public class MainActivity extends AppCompatActivity {
                 row.addView(imageView);
             }
         });
+
     }
 
     private void sendDownloadRequest(TransferRequest transferRequest) {
@@ -458,5 +460,10 @@ public class MainActivity extends AppCompatActivity {
             }
         }).start();
         super.onStop();
+    }
+
+    public void tabsExample(View view) {
+        Intent intent = new Intent(this, TabActivity.class);
+        startActivity(intent);
     }
 }

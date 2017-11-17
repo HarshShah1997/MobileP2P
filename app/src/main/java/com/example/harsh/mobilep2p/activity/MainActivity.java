@@ -3,6 +3,8 @@ package com.example.harsh.mobilep2p.activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
+import android.support.design.widget.TabLayout;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -16,7 +18,9 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.harsh.mobilep2p.TabActivity;
+import com.example.harsh.mobilep2p.ViewPagerAdapter;
+import com.example.harsh.mobilep2p.fragment.DevicesFragment;
+import com.example.harsh.mobilep2p.fragment.FilesFragment;
 import com.example.harsh.mobilep2p.info.FileStatusInfo;
 import com.example.harsh.mobilep2p.info.ResourcesInfo;
 import com.example.harsh.mobilep2p.types.FileDownloadStatus;
@@ -64,10 +68,47 @@ public class MainActivity extends AppCompatActivity {
     private FileTransferUtils fileTransferUtils = new FileTransferUtils();
     private FileStatusInfo fileStatusInfo = new FileStatusInfo();
 
+    private FilesFragment filesFragment;
+    private DevicesFragment devicesFragment;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //Initializing viewPager
+        final ViewPager viewPager = (ViewPager) findViewById(R.id.viewpager);
+
+        //Initializing the tablayout
+        TabLayout tabLayout = (TabLayout) findViewById(R.id.tablayout);
+        tabLayout.setupWithViewPager(viewPager);
+
+        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                viewPager.setCurrentItem(position, false);
+
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
+        setupViewPager(viewPager);
+    }
+
+    private void setupViewPager(ViewPager viewPager) {
+        ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
+        filesFragment = new FilesFragment();
+        devicesFragment = new DevicesFragment();
+        adapter.addFragment(filesFragment, "Files");
+        adapter.addFragment(devicesFragment, "Devices");
+        viewPager.setAdapter(adapter);
     }
 
     @Override
@@ -197,6 +238,7 @@ public class MainActivity extends AppCompatActivity {
         resourcesInfo.addHostAddress(hostAddress);
         SystemResources resources = gson.fromJson(json, SystemResources.class);
         resourcesInfo.addResources(hostAddress, resources);
+        devicesFragment.addDevice(hostAddress, resources);
     }
 
     private void updateSmartHead(String newSmartHead) {
@@ -213,7 +255,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void refreshFilesListUI() {
-        runOnUiThread(new Runnable() {
+        /*runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 LinearLayout linearLayout = (LinearLayout) findViewById(R.id.filesListLayout);
@@ -223,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
                     addRow(file, linearLayout);
                 }
             }
-        });
+        });*/
     }
 
     private void sendFile(String json) {
@@ -249,13 +291,6 @@ public class MainActivity extends AppCompatActivity {
         resourcesInfo.removeHostAddress(node);
         fileListInfo.removeNode(node);
         refreshFilesListUI();
-    }
-
-    public void showDevices(View view) {
-        Intent intent = new Intent(this, DevicesListActivity.class);
-        intent.putExtra(IntentConstants.RESOURCES_MAP, resourcesInfo.getResourcesMap());
-        intent.putExtra(IntentConstants.SMART_HEAD, smartHead);
-        startActivity(intent);
     }
 
     private void addRow(final FileMetadata file, LinearLayout parent) {
@@ -460,10 +495,5 @@ public class MainActivity extends AppCompatActivity {
             }
         }).start();
         super.onStop();
-    }
-
-    public void tabsExample(View view) {
-        Intent intent = new Intent(this, TabActivity.class);
-        startActivity(intent);
     }
 }

@@ -1,8 +1,4 @@
-package com.example.harsh.mobilep2p;
-
-/**
- * Created by Harsh on 17-Nov-17.
- */
+package com.example.harsh.mobilep2p.fragment;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -11,7 +7,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-public class ChatFragment extends Fragment {
+/**
+ * Created by Harsh on 17-Nov-17.
+ */
+
+public class FilesFragment extends Fragment {
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {

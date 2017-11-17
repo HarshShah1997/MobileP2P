@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">MobileP2P</string>
     <string name="ipAddr">IP Address</string>
-    <string name="batteryLabel">Battery(%)</string>
-    <string name="ramLabel">RAM(MB)</string>
+    <string name="batteryLabel">Battery</string>
+    <string name="ramLabel">RAM</string>
     <string name="smartHeadLabel">Smart Head</string>
     <string name="batteryStatusLabel">Battery Status</string>
     <string name="title_activity_tab">TabActivity</string>

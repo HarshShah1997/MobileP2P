@@ -49,14 +49,12 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements FilesFragment.OnFileDownloadListener {
 
     private static final String TAG = "MainActivity";
     private static final int BROADCAST_PORT = 6578;
     private static final int FILE_TRANSFER_PORT = 6579;
     private static final int BUFF_SIZE = 4096;
-    private static final int TEXT_VIEW_SIZE = 16;
-    private static final int BORDER_HEIGHT = 1;
 
     private String smartHead = "";
     private List<FileMetadata> deviceFilesList = new ArrayList<>();
@@ -66,7 +64,6 @@ public class MainActivity extends AppCompatActivity {
     private ResourcesInfo resourcesInfo = new ResourcesInfo();
     private DeviceUtils deviceUtils = new DeviceUtils();
     private FileTransferUtils fileTransferUtils = new FileTransferUtils();
-    private FileStatusInfo fileStatusInfo = new FileStatusInfo();
 
     private FilesFragment filesFragment;
     private DevicesFragment devicesFragment;
@@ -243,6 +240,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateSmartHead(String newSmartHead) {
         smartHead = newSmartHead;
+        devicesFragment.updateSmartHead(smartHead);
     }
 
     private void updateFilesList(String json, String hostAddress) {
@@ -251,21 +249,7 @@ public class MainActivity extends AppCompatActivity {
         List<FileMetadata> receivedFilesList = gson.fromJson(json, typeListFileMetadata);
         fileListInfo.addFilesList(receivedFilesList, hostAddress);
         Log.d(TAG, "Files in the network: " + fileListInfo.getFiles());
-        refreshFilesListUI();
-    }
-
-    private void refreshFilesListUI() {
-        /*runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                LinearLayout linearLayout = (LinearLayout) findViewById(R.id.filesListLayout);
-                linearLayout.removeAllViews();
-                for (int i = 0; i < fileListInfo.getFiles().size(); i++) {
-                    FileMetadata file = fileListInfo.getFiles().get(i);
-                    addRow(file, linearLayout);
-                }
-            }
-        });*/
+        filesFragment.refreshFilesListUI(fileListInfo.getFiles());
     }
 
     private void sendFile(String json) {
@@ -290,50 +274,9 @@ public class MainActivity extends AppCompatActivity {
     private void removeNode(String node) {
         resourcesInfo.removeHostAddress(node);
         fileListInfo.removeNode(node);
-        refreshFilesListUI();
+        filesFragment.refreshFilesListUI(fileListInfo.getFiles());
     }
 
-    private void addRow(final FileMetadata file, LinearLayout parent) {
-        LinearLayout row = new LinearLayout(this);
-        row.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-
-        String text = generateText(file.getFileName(), file.getFileSize());
-        row.addView(createTextView(text));
-        fileStatusInfo.setFileRow(file, row);
-
-        row.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                downloadFile(file);
-            }
-        });
-
-        parent.addView(row);
-        parent.addView(createEmptyRow());
-    }
-
-    private TextView createTextView(String text) {
-        TextView textView = new TextView(MainActivity.this);
-        textView.setText(text);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, TEXT_VIEW_SIZE);
-        textView.setTextColor(Color.GRAY);
-        textView.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 0.9f));
-        return textView;
-    }
-
-    private LinearLayout createEmptyRow() {
-        LinearLayout emptyRow = new LinearLayout(MainActivity.this);
-        emptyRow.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, BORDER_HEIGHT));
-        emptyRow.setBackgroundColor(Color.BLACK);
-        emptyRow.addView(createEmptyLine());
-        return emptyRow;
-    }
-
-    private TextView createEmptyLine() {
-        TextView textView = new TextView(MainActivity.this);
-        textView.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, BORDER_HEIGHT));
-        return textView;
-    }
 
     private boolean isSmartHead() {
         return deviceUtils.getDeviceIPAddress(MainActivity.this).getHostAddress().equals(smartHead);
@@ -344,7 +287,8 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Device files: " + deviceFilesList);
     }
 
-    private void downloadFile(final FileMetadata file) {
+    @Override
+    public void downloadFile(final FileMetadata file) {
         new AlertDialog.Builder(this)
                 .setMessage("Confirm download?")
                 .setIcon(android.R.drawable.ic_dialog_alert)
@@ -359,8 +303,8 @@ public class MainActivity extends AppCompatActivity {
     private void startDownload(final FileMetadata file) {
         final String fileName = file.getFileName();
         final long fileSize = file.getFileSize();
-        fileStatusInfo.setFileStatus(file, FileDownloadStatus.PROGRESS);
-        showStatus(file, fileStatusInfo.getFileStatus(file));
+        filesFragment.updateFileStatus(file, FileDownloadStatus.PROGRESS);
+
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -378,7 +322,7 @@ public class MainActivity extends AppCompatActivity {
                                 try {
                                     fileTransferUtils.receiveFile(transferRequest, serverSocket);
                                 } catch (IOException | ArrayIndexOutOfBoundsException e) {
-                                    fileStatusInfo.setFileStatus(file, FileDownloadStatus.FAILED);
+                                    filesFragment.updateFileStatus(file, FileDownloadStatus.FAILED);
                                     Log.e(TAG, e.getMessage());
                                 }
                             }
@@ -388,10 +332,9 @@ public class MainActivity extends AppCompatActivity {
                         sendDownloadRequest(transferRequest);
                     }
                     joinThreads(threads);
-                    if ((fileStatusInfo.getFileStatus(file)).equals(FileDownloadStatus.PROGRESS)) {
-                        fileStatusInfo.setFileStatus(file, FileDownloadStatus.SUCCESS);
+                    if ((filesFragment.getFileStatus(file)).equals(FileDownloadStatus.PROGRESS)) {
+                        filesFragment.updateFileStatus(file, FileDownloadStatus.SUCCESS);
                     }
-                    showStatus(file, fileStatusInfo.getFileStatus(file));
                     serverSocket.close();
                 } catch (IOException e) {
                     Log.e(TAG, e.getMessage());
@@ -424,30 +367,6 @@ public class MainActivity extends AppCompatActivity {
         return transferRequests;
     }
 
-    private void showStatus(final FileMetadata file, final String fileStatus) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                LinearLayout row = fileStatusInfo.getFileRow(file);
-                row.removeAllViews();
-                ImageView imageView = new ImageView(MainActivity.this);
-                imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                row.addView(createTextView(generateText(file.getFileName(), file.getFileSize())));
-
-                if (fileStatus.equals(FileDownloadStatus.SUCCESS)) {
-                    Log.d(TAG, "Download succeeded");
-                    imageView.setImageResource(R.mipmap.download_success);
-                } else if (fileStatus.equals(FileDownloadStatus.PROGRESS)) {
-                    imageView.setImageResource(R.mipmap.download_progress);
-                } else if (fileStatus.equals(FileDownloadStatus.FAILED)) {
-                    imageView.setImageResource(R.mipmap.download_failed);
-                }
-                row.addView(imageView);
-            }
-        });
-
-    }
-
     private void sendDownloadRequest(TransferRequest transferRequest) {
         String json = gson.toJson(transferRequest);
         String message = CommandTypes.SEND_FILE + json;
@@ -462,22 +381,6 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, e.getMessage());
             }
         }
-    }
-
-    private String generateText(String fileName, long fileSize) {
-        String fileSizeString = getFileSizeString(fileSize);
-        return fileName + "\n" + fileSizeString;
-    }
-
-    private String getFileSizeString(long fileSize) {
-        double size = fileSize;
-        List<String> fileSizeSuffixes = new ArrayList<>(Arrays.asList("bytes", "KB", "MB", "GB", "TB"));
-        int suffixPointer = 0;
-        while (size > 1024) {
-            suffixPointer++;
-            size = size / 1024;
-        }
-        return String.format(Locale.ENGLISH, "%.2f %s", size, fileSizeSuffixes.get(suffixPointer));
     }
 
     private void closeSocket(DatagramSocket socket) {

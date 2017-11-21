@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -47,6 +48,7 @@ public class DevicesFragment extends Fragment {
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
+        Log.d("MainActivity", "Devices Activity attached");
         mActivity = activity;
     }
 
@@ -66,16 +68,18 @@ public class DevicesFragment extends Fragment {
     }
 
     private void refreshUI() {
-        mActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                TableLayout tableLayout = (TableLayout) getView().findViewById(R.id.tableLayout);
-                for (Map.Entry<String, SystemResources> entry : resourcesMap.entrySet()) {
-                    addResourcesToTable(entry.getKey(), entry.getValue());
+        if (isAdded()) {
+            mActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    TableLayout tableLayout = (TableLayout) getView().findViewById(R.id.tableLayout);
+                    for (Map.Entry<String, SystemResources> entry : resourcesMap.entrySet()) {
+                        addResourcesToTable(entry.getKey(), entry.getValue());
+                    }
+                    addSmartHead();
                 }
-                addSmartHead();
-            }
-        });
+            });
+        }
     }
 
     private void addResourcesToTable(final String hostAddress, final SystemResources resources) {

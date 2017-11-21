@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -62,20 +63,23 @@ public class FilesFragment extends Fragment {
                     + " must implement OnHeadlineSelectedListener");
         }
         mActivity = activity;
+        Log.d("MainActivity", "Files Activity attached");
     }
 
     public void refreshFilesListUI(final List<FileMetadata> files) {
-        mActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                LinearLayout linearLayout = (LinearLayout) getView().findViewById(R.id.filesListLayout);
-                linearLayout.removeAllViews();
-                for (int i = 0; i < files.size(); i++) {
-                    FileMetadata file = files.get(i);
-                    addRow(file, linearLayout);
+        if (isAdded()) {
+            mActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    LinearLayout linearLayout = (LinearLayout) getView().findViewById(R.id.filesListLayout);
+                    linearLayout.removeAllViews();
+                    for (int i = 0; i < files.size(); i++) {
+                        FileMetadata file = files.get(i);
+                        addRow(file, linearLayout);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     public void updateFileStatus(final FileMetadata file, final String fileStatus) {

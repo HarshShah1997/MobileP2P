@@ -66,8 +66,8 @@ public class MainActivity extends AppCompatActivity implements FilesFragment.OnF
     private DeviceUtils deviceUtils = new DeviceUtils();
     private FileTransferUtils fileTransferUtils = new FileTransferUtils();
 
-    private FilesFragment filesFragment;
-    private DevicesFragment devicesFragment;
+    private FilesFragment filesFragment = new FilesFragment();
+    private DevicesFragment devicesFragment = new DevicesFragment();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,8 +102,6 @@ public class MainActivity extends AppCompatActivity implements FilesFragment.OnF
 
     private void setupViewPager(ViewPager viewPager) {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
-        filesFragment = new FilesFragment();
-        devicesFragment = new DevicesFragment();
         adapter.addFragment(filesFragment, "Files");
         adapter.addFragment(devicesFragment, "Devices");
         viewPager.setAdapter(adapter);

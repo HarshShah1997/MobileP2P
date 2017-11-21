@@ -35,6 +35,7 @@ public class FilesFragment extends Fragment {
 
     private FileStatusInfo fileStatusInfo = new FileStatusInfo();
     private OnFileDownloadListener mCallback;
+    private Activity mActivity;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -60,10 +61,11 @@ public class FilesFragment extends Fragment {
             throw new ClassCastException(activity.toString()
                     + " must implement OnHeadlineSelectedListener");
         }
+        mActivity = activity;
     }
 
     public void refreshFilesListUI(final List<FileMetadata> files) {
-        getActivity().runOnUiThread(new Runnable() {
+        mActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 LinearLayout linearLayout = (LinearLayout) getView().findViewById(R.id.filesListLayout);

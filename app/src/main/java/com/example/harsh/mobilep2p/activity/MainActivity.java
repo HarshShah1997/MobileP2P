@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements FilesFragment.OnF
 
     private String smartHead = "";
     private List<FileMetadata> deviceFilesList = new ArrayList<>();
+    private ServerSocket serverSocket;
 
     private Gson gson = new Gson();
     private FileListInfo fileListInfo = new FileListInfo();
@@ -120,6 +121,7 @@ public class MainActivity extends AppCompatActivity implements FilesFragment.OnF
         getFilesFromDevice();
         announcePresence();
         startElection();
+        startServerSocket();
     }
 
     private void startReceiveBroadcast() {
@@ -311,34 +313,28 @@ public class MainActivity extends AppCompatActivity implements FilesFragment.OnF
                 List<String> nodes = fileListInfo.getNodesContainingFile(fileName, fileSize);
                 Log.d(TAG, "Download requested: " + fileName + " " + fileSize + " Locations: " + nodes);
                 List<TransferRequest> transferRequests = generateTransferRequests(fileName, fileSize, nodes);
-                try {
 
-                    final ServerSocket serverSocket = new ServerSocket(FILE_TRANSFER_PORT);
-
-                    List<Thread> threads = new ArrayList<>();
-                    for (final TransferRequest transferRequest : transferRequests) {
-                        Thread thread = new Thread(new Runnable() {
-                            public void run() {
-                                try {
-                                    fileTransferUtils.receiveFile(transferRequest, serverSocket);
-                                } catch (IOException | ArrayIndexOutOfBoundsException e) {
-                                    filesFragment.updateFileStatus(file, FileDownloadStatus.FAILED);
-                                    Log.e(TAG, e.getMessage());
-                                }
+                List<Thread> threads = new ArrayList<>();
+                for (final TransferRequest transferRequest : transferRequests) {
+                    Thread thread = new Thread(new Runnable() {
+                        public void run() {
+                            try {
+                                fileTransferUtils.receiveFile(transferRequest, serverSocket);
+                            } catch (IOException | ArrayIndexOutOfBoundsException e) {
+                                filesFragment.updateFileStatus(file, FileDownloadStatus.FAILED);
+                                Log.e(TAG, e.getMessage());
                             }
-                        });
-                        threads.add(thread);
-                        thread.start();
-                        sendDownloadRequest(transferRequest);
-                    }
-                    joinThreads(threads);
-                    if ((filesFragment.getFileStatus(file)).equals(FileDownloadStatus.PROGRESS)) {
-                        filesFragment.updateFileStatus(file, FileDownloadStatus.SUCCESS);
-                    }
-                    serverSocket.close();
-                } catch (IOException e) {
-                    Log.e(TAG, e.getMessage());
+                        }
+                    });
+                    threads.add(thread);
+                    thread.start();
+                    sendDownloadRequest(transferRequest);
                 }
+                joinThreads(threads);
+                if ((filesFragment.getFileStatus(file)).equals(FileDownloadStatus.PROGRESS)) {
+                    filesFragment.updateFileStatus(file, FileDownloadStatus.SUCCESS);
+                }
+
             }
         }).start();
     }
@@ -389,12 +385,30 @@ public class MainActivity extends AppCompatActivity implements FilesFragment.OnF
         }
     }
 
+    private void startServerSocket() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    serverSocket = new ServerSocket(FILE_TRANSFER_PORT);
+                } catch (IOException e) {
+                    Log.e(TAG, e.getMessage());
+                }
+            }
+        }).start();
+    }
+
     @Override
     protected void onStop() {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 sendBroadcast(CommandTypes.QUIT);
+                try {
+                    serverSocket.close();
+                } catch (IOException e) {
+                    Log.e(TAG, e.getMessage());
+                }
             }
         }).start();
         super.onStop();

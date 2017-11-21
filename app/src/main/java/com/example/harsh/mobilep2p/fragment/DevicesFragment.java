@@ -1,5 +1,6 @@
 package com.example.harsh.mobilep2p.fragment;
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -24,6 +25,7 @@ import java.util.Map;
 public class DevicesFragment extends Fragment {
 
     private static final int TEXTVIEW_SIZE = 12;
+    private Activity mActivity;
 
     HashMap<String, SystemResources> resourcesMap = new HashMap<>();
     private Map<String, TableRow> tableRowMap = new HashMap<>();
@@ -42,6 +44,12 @@ public class DevicesFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_devices, container, false);
     }
 
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mActivity = activity;
+    }
+
     public void addDevice(String hostAddress, SystemResources systemResource) {
         resourcesMap.put(hostAddress, systemResource);
         refreshUI();
@@ -58,7 +66,7 @@ public class DevicesFragment extends Fragment {
     }
 
     private void refreshUI() {
-        getActivity().runOnUiThread(new Runnable() {
+        mActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 TableLayout tableLayout = (TableLayout) getView().findViewById(R.id.tableLayout);

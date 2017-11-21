@@ -275,6 +275,10 @@ public class MainActivity extends AppCompatActivity implements FilesFragment.OnF
         resourcesInfo.removeHostAddress(node);
         fileListInfo.removeNode(node);
         filesFragment.refreshFilesListUI(fileListInfo.getFiles());
+        devicesFragment.removeDevice(node);
+        if (node.equals(smartHead)) {
+            startElection();
+        }
     }
 
 

@@ -1,6 +1,7 @@
 package com.example.harsh.mobilep2p.fragment;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -28,7 +29,7 @@ public class DevicesFragment extends Fragment {
     private static final int TEXTVIEW_SIZE = 12;
     private Activity mActivity;
 
-    HashMap<String, SystemResources> resourcesMap = new HashMap<>();
+    private HashMap<String, SystemResources> resourcesMap = new HashMap<>();
     private Map<String, TableRow> tableRowMap = new HashMap<>();
     private String smartHead = "";
 
@@ -57,8 +58,9 @@ public class DevicesFragment extends Fragment {
         refreshUI();
     }
 
-    public void removeDevice(String hostAddress) {
+    public void removeDevice(final String hostAddress) {
         resourcesMap.remove(hostAddress);
+        tableRowMap.remove(hostAddress);
         refreshUI();
     }
 
@@ -73,6 +75,7 @@ public class DevicesFragment extends Fragment {
                 @Override
                 public void run() {
                     TableLayout tableLayout = (TableLayout) getView().findViewById(R.id.tableLayout);
+                    tableLayout.removeAllViews();
                     for (Map.Entry<String, SystemResources> entry : resourcesMap.entrySet()) {
                         addResourcesToTable(entry.getKey(), entry.getValue());
                     }
@@ -83,17 +86,15 @@ public class DevicesFragment extends Fragment {
     }
 
     private void addResourcesToTable(final String hostAddress, final SystemResources resources) {
-        if (tableRowMap.get(hostAddress) == null) {
             addTableRow(hostAddress);
-        }
-        TableRow row = tableRowMap.get(hostAddress);
+            TableRow row = tableRowMap.get(hostAddress);
 
-        row.removeAllViews();
+            row.removeAllViews();
 
-        row.addView(createTextView(hostAddress));
-        row.addView(createTextView(resources.getBatteryStatus()));
-        row.addView(createTextView(resources.getBatteryLevel()));
-        row.addView(createTextView(resources.getTotalMemory()));
+            row.addView(createTextView(hostAddress));
+            row.addView(createTextView(resources.getBatteryStatus()));
+            row.addView(createTextView(resources.getBatteryLevel()));
+            row.addView(createTextView(resources.getTotalMemory()));
     }
 
     private TextView createTextView(String text) {

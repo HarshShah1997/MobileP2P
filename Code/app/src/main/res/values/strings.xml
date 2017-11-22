@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">MobileP2P</string>
+    <string name="ipAddr">IP Address</string>
+    <string name="batteryLabel">Battery</string>
+    <string name="ramLabel">RAM</string>
+    <string name="smartHeadLabel">Smart Head</string>
+    <string name="batteryStatusLabel">Battery Status</string>
+    <string name="title_activity_tab">TabActivity</string>
+    <string name="action_settings">Settings</string>
+    <string name="section_format">Hello World from section: %1$d</string>
+    <string name="show_devices">Show Devices</string>
+</resources>

@@ -10,18 +10,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
 import android.util.Log;
-import android.util.TypedValue;
-import android.view.View;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.TableRow;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.harsh.mobilep2p.ViewPagerAdapter;
 import com.example.harsh.mobilep2p.fragment.DevicesFragment;
 import com.example.harsh.mobilep2p.fragment.FilesFragment;
-import com.example.harsh.mobilep2p.info.FileStatusInfo;
 import com.example.harsh.mobilep2p.info.ResourcesInfo;
 import com.example.harsh.mobilep2p.types.FileDownloadStatus;
 import com.example.harsh.mobilep2p.types.TransferRequest;
@@ -30,7 +23,6 @@ import com.example.harsh.mobilep2p.info.FileListInfo;
 import com.example.harsh.mobilep2p.types.FileMetadata;
 import com.example.harsh.mobilep2p.R;
 import com.example.harsh.mobilep2p.types.CommandTypes;
-import com.example.harsh.mobilep2p.types.IntentConstants;
 import com.example.harsh.mobilep2p.types.SystemResources;
 import com.example.harsh.mobilep2p.util.FileTransferUtils;
 import com.google.gson.Gson;
@@ -43,9 +35,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
